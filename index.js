@@ -30,7 +30,7 @@ const res = await db.query(query) //gets a question
 const svgFile = fs.readFileSync("test.svg", "utf8");
 const dataFile = fs.readFileSync("test.xml", "utf8");
 let svgObject = xmljs.xml2js(svgFile, { compact: true });
-let xmlObject = xmljs.xml2js(svgFile, { compact: true });
+let xmlObject = xmljs.xml2js(dataFile, { compact: true });
 if (svgObject.svg.path) {
   const paths = Array.isArray(svgObject.svg.path) ? svgObject.svg.path : [svgObject.svg.path];
   paths.forEach((path) => {
