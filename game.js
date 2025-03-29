@@ -22,7 +22,7 @@ export default class Game {
   visualize () {
     let visualBuffer = this.mapBuffer
     visualBuffer.svg.path.forEach((path) => {
-      path._attributes.style = `fill: ${colors[this.regions.get(path._attributes.id)]}; stroke: rgb(0, 0, 255);`
+      path._attributes.style = `fill: ${colors[this.regions.get(path._attributes.id)]}; stroke: rgb(0, 0, 0);`
     })
     const updatedBuffer = xmljs.js2xml(visualBuffer, { compact: true, spaces: 2 })
     fs.writeFileSync("visualized_game.svg", updatedBuffer, "utf8");

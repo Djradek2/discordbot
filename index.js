@@ -35,7 +35,7 @@ if (svgObject.svg.path) {
   const paths = Array.isArray(svgObject.svg.path) ? svgObject.svg.path : [svgObject.svg.path];
   paths.forEach((path) => {
     if (path._attributes && path._attributes.style) {
-      path._attributes.style = "fill: rgb(126, 126, 126); stroke: rgb(0, 0, 255);";
+      path._attributes.style = "fill: rgb(126, 126, 126); stroke: rgb(0, 0, 0);";
     }
   });
 }
