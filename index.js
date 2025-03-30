@@ -2,12 +2,18 @@ import { createRequire } from "module"; // Node.js built-in module
 const require = createRequire(import.meta.url);
 
 import dotenv from 'dotenv'
-import { Client, GatewayIntentBits, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import pg from 'pg'
+import { Client, Collection, Events, GatewayIntentBits, ButtonBuilder, ButtonStyle, ActionRowBuilder, REST, Routes } from 'discord.js';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { dirname } from 'path';
 const fs = require("pn/fs");
 const xmljs = require("xml-js");
 const svg2png = require("svg2png");
+const nodePath = require('node:path');
 dotenv.config()
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const { Client: DBClient } = pg
  
@@ -60,6 +66,52 @@ const client = new Client({
     //GatewayIntentBits.GuildMembers,
     GatewayIntentBits.DirectMessages
   ],
+});
+
+client.commands = new Collection();
+const foldersPath = nodePath.join(__dirname, 'commands');
+const commandFolders = fs.readdirSync(foldersPath);
+
+for (const folder of commandFolders) {
+	const commandsPath = nodePath.join(foldersPath, folder);
+	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.cjs'));
+	for (const file of commandFiles) {
+		const filePath = nodePath.join(commandsPath, file);
+		let command = require(filePath);
+		client.commands.set(command.name, command);
+	}
+}
+
+const rest = new REST().setToken(process.env.DISCORD_TOKEN);
+(async () => {
+	try {
+		const data = await rest.put(
+			Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+			{ body: client.commands },
+		);
+	} catch (error) {
+		console.error(error);
+	}
+})();
+
+client.on(Events.InteractionCreate, async interaction => {
+	if (!interaction.isChatInputCommand()) return;
+	const command = interaction.client.commands.get(interaction.commandName);
+	if (!command) {
+		console.error(`No command matching ${interaction.commandName} was found.`);
+		return;
+	}
+
+	try {
+		await command.execute(interaction);
+	} catch (error) {
+		console.error(error);
+		if (interaction.replied || interaction.deferred) {
+			await interaction.followUp({ content: 'There was an error while executing this command!' });
+		} else {
+			await interaction.reply({ content: 'There was an error while executing this command!' });
+		}
+	}
 });
 
 client.login(process.env.DISCORD_TOKEN);
