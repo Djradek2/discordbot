@@ -5,7 +5,7 @@ const fs = require("pn/fs");
 
 let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "#ff01f5", "#7f7f7f", "#fec80e"]
 
-export default class Game {
+class Game {
   players = []
   regions = new Map() //id -> player
   mapBuffer = null //based off map
@@ -31,4 +31,8 @@ export default class Game {
   setOwner (regionId, playerId) {
     this.regions.set(String(regionId), playerId)
   }
+}
+
+module.exports = {
+  Game
 }
