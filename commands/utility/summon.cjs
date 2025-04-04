@@ -1,15 +1,16 @@
 const Lobby = require("../../class/lobby.js")
+const Helper = require("../../class/utility/helper.js")
 const xmljs = require("xml-js");
 const fs = require("pn/fs");
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js'); // SlashCommandBuilder
 
 module.exports = {
-  name: "ping",
-  description: "Replies with Pong!",
+  name: "summon",
+  description: "Summons the main menu of the bot!",
   execute: async (interaction, server) => { //server is centerpoint of data in the application
     const mainMenuRow = new ActionRowBuilder()
-    mainMenuRow.addComponents(new ButtonBuilder().setCustomId("startgame").setLabel("Queue Up").setStyle(ButtonStyle.Primary));
+    mainMenuRow.addComponents(new ButtonBuilder().setCustomId("queueUp").setLabel("Queue Up").setStyle(ButtonStyle.Primary));
     mainMenuRow.addComponents(new ButtonBuilder().setCustomId("hostlobby").setLabel("Host Lobby").setStyle(ButtonStyle.Primary));
     mainMenuRow.addComponents(new ButtonBuilder().setCustomId("joinlobby").setLabel("Join Lobby").setStyle(ButtonStyle.Primary));
     mainMenuRow.addComponents(new ButtonBuilder().setCustomId("langselect").setLabel("Change Language").setStyle(ButtonStyle.Primary));
@@ -21,15 +22,24 @@ module.exports = {
       time: 60000,
     });
     collector.on('collect', async (interaction) => {
-      console.log(interaction.customId)
-      if (interaction.customId === "startgame"){
+      if (interaction.customId === "queueUp"){
 
       } else if (interaction.customId === "hostlobby") {
-        lobbyCode = ""
-        for (let i = 0; i < 16; i++) {
-          lobbyCode += Math.floor(Math.random() * 10)
-        }
-        let lobbyVar = new Lobby.Lobby(interaction.author, lobbyCode, server)
+        let lobbyVar = new Lobby.Lobby(interaction, Helper.generateId16(), server)
+        const startGameRow = new ActionRowBuilder()
+        startGameRow.addComponents(new ButtonBuilder().setCustomId("startgame").setLabel("Start game").setStyle(ButtonStyle.Primary));
+        interaction.reply({
+          content: "Created lobby with code: " + lobbyVar.lobbyCode, ephemeral: true,
+          components: [mainMenuRow]
+        })
+        const lobbyCollector = memberResponse.createMessageComponentCollector({
+          time: 6000000,
+        });
+        lobbyCollector.on('collect', async (interaction) => {
+          lobbyVar.startGame()
+        })
+      } else if (interaction.customId === "joinlobby") {
+        
       } else if (interaction.customId === "langselect") {
         
       }

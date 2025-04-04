@@ -9,12 +9,11 @@
 const dotenv = require('dotenv');
 const pg = require('pg');
 const { Client, Collection, Events, GatewayIntentBits, ButtonBuilder, ButtonStyle, ActionRowBuilder, REST, Routes } = require('discord.js');
-const { fileURLToPath, pathToFileURL } = require('url');
-const { dirname } = require('path');
 const fs = require("pn/fs");
 const xmljs = require("xml-js");
 const svg2png = require("svg2png");
 const nodePath = require('node:path');
+const server = require('./class/server.js')
 dotenv.config()
 
 const { Client: DBClient } = pg
@@ -42,17 +41,9 @@ setupServer()
 // const updatedSvg = xmljs.js2xml(svgObject, { compact: true, spaces: 2 });
 // fs.writeFileSync("updated_test.svg", updatedSvg, "utf8");
 
-// const testRow = new ActionRowBuilder()
-// const correctButton = new ButtonBuilder().setCustomId("test1").setLabel(res['rows'][0]['correct']).setStyle(ButtonStyle.Primary);
-// const falseButton1 = new ButtonBuilder().setCustomId("test2").setLabel(res['rows'][0]['option1']).setStyle(ButtonStyle.Primary);
-// const falseButton2 = new ButtonBuilder().setCustomId("test3").setLabel(res['rows'][0]['option2']).setStyle(ButtonStyle.Primary);
-// const falseButton3 = new ButtonBuilder().setCustomId("test4").setLabel(res['rows'][0]['option3']).setStyle(ButtonStyle.Primary);
-
-// testRow.addComponents(correctButton)
-// testRow.addComponents(falseButton1)
-// testRow.addComponents(falseButton2)
-// testRow.addComponents(falseButton3)
 async function setupServer () {
+  let serverVar = new server.Server();
+
   await db.connect();
   const query = {
     name: 'fetch-user',
@@ -78,8 +69,9 @@ async function setupServer () {
       GatewayIntentBits.DirectMessages
     ],
   });
+  client.login(process.env.DISCORD_TOKEN);
   
-  client.commands = new Collection();
+  client.commands = new Collection(); //command load start
   const foldersPath = nodePath.join(__dirname, 'commands');
   const commandFolders = fs.readdirSync(foldersPath);
   
@@ -93,7 +85,7 @@ async function setupServer () {
     }
   }
   
-  const rest = new REST().setToken(process.env.DISCORD_TOKEN);
+  const rest = new REST().setToken(process.env.DISCORD_TOKEN); //start sending command to discord
   (async () => {
     try {
       const data = await rest.put(
@@ -105,8 +97,10 @@ async function setupServer () {
     }
   })();
   
-  client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
+  client.on(Events.InteractionCreate, async interaction => { //try to execute called command
+    if (!interaction.isChatInputCommand()) {
+      return;
+    }
     const command = interaction.client.commands.get(interaction.commandName);
     if (!command) {
       console.error(`No command matching ${interaction.commandName} was found.`);
@@ -114,7 +108,7 @@ async function setupServer () {
     }
   
     try {
-      await command.execute(interaction);
+      await command.execute(interaction, serverVar);
     } catch (error) {
       console.error(error);
       if (interaction.replied || interaction.deferred) {
@@ -124,8 +118,6 @@ async function setupServer () {
       }
     }
   });
-  
-  client.login(process.env.DISCORD_TOKEN);
   
   client.on('messageCreate', async (message) => {
     if(!message?.author.bot){

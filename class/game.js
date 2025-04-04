@@ -1,7 +1,6 @@
-import { createRequire } from "module"; // Node.js built-in module
-const require = createRequire(import.meta.url);
 const xmljs = require("xml-js");
 const fs = require("pn/fs");
+const svg2png = require("svg2png");
 
 let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "#ff01f5", "#7f7f7f", "#fec80e"]
 
@@ -10,6 +9,8 @@ class Game {
   regions = new Map() //id -> player
   mapBuffer = null //based off map
   dataBuffer = null //based off map
+  pngMap = null
+  currentAnswers = new Map //player_id -> answer
 
   constructor (mapName, players) {
     this.mapBuffer = xmljs.xml2js(fs.readFileSync(mapName + ".svg", "utf8"), { compact: true }) //this should actually already be loaded on server start and just be passed to the buffer
@@ -17,19 +18,70 @@ class Game {
     this.dataBuffer.map.region.forEach((region) => {
       this.regions.set(region.id._text, 0)
     })
+    this.startSetup()
   }
 
-  visualize () {
+  updateVisualization () { //still needs to show capitals, and region numbers
     let visualBuffer = this.mapBuffer
     visualBuffer.svg.path.forEach((path) => {
       path._attributes.style = `fill: ${colors[this.regions.get(path._attributes.id)]}; stroke: rgb(0, 0, 0);`
     })
     const updatedBuffer = xmljs.js2xml(visualBuffer, { compact: true, spaces: 2 })
-    fs.writeFileSync("visualized_game.svg", updatedBuffer, "utf8");
+    //fs.writeFileSync("visualized_game.svg", updatedBuffer, "utf8");
+  }
+
+  sendMapToPlayer () {
+
   }
 
   setOwner (regionId, playerId) {
     this.regions.set(String(regionId), playerId)
+  }
+
+  startSetup () {
+    const select = new StringSelectMenuBuilder().setCustomId('starter').setPlaceholder('Make a selection!').addOptions(
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Bulbasaur')
+        .setDescription('The dual-type Grass/Poison Seed Pokémon.')
+        .setValue('bulbasaur'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Charmander')
+        .setDescription('The Fire-type Lizard Pokémon.')
+        .setValue('charmander'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Squirtle')
+        .setDescription('The Water-type Tiny Turtle Pokémon.')
+        .setValue('squirtle'),
+    );
+    players[0].reply({
+
+    })
+    //send Map
+    //select capitals
+  }
+
+  startRound () {
+
+  }
+
+  serverChoiceQuestion () {
+
+  }
+
+  serveSpeedQuestion () {
+
+  }
+
+  setAnswer (player, answer) {
+
+  }
+
+  checkAnswers () {
+
+  }
+
+  clearAnswers () {
+    //just foreach over the answer holder
   }
 }
 

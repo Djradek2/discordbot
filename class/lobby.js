@@ -1,3 +1,6 @@
+const game = require('./game.js')
+const Helper = require("../../class/utility/helper.js")
+
 class Lobby {
   players = []
   lobbyCode = "" //16 numbers, do you think collisions will happen?
@@ -18,7 +21,13 @@ class Lobby {
   }
 
   startGame () {
+    //create game and write it to server and remove the lobby
+    currentGames.set(Helper.generateId16(), new game.Game("test", this.players))
+    closeLobby()
+  }
 
+  closeLobby () {
+    this.server.removeLobby(lobbyCode)
   }
 }
 

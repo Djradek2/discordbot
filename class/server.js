@@ -1,7 +1,12 @@
 class Server {
-  lobbies = new Map() //lobbyId -> Lobby 
+  openLobbies = new Map() //lobbyId -> Lobby 
+  currentGames = new Map()
   
   constructor () {}
+
+  removeLobby (id) {
+    this.openLobbies.set(id, null)
+  }
 }
 
 module.exports = {
