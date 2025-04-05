@@ -78,7 +78,15 @@ class Game {
 
   }
 
-  serverChoiceQuestion () {
+  getAllRegions () {
+    //for capital selection
+  }
+
+  getConquerableRegions () {
+    //first border, if none then anywhere
+  }
+
+  serveChoiceQuestion () {
 
   }
 
