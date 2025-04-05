@@ -1,5 +1,5 @@
 const game = require('./game.js')
-const Helper = require("../../class/utility/helper.js")
+const Helper = require("./utility/helper.js")
 
 class Lobby {
   players = []
@@ -21,9 +21,10 @@ class Lobby {
   }
 
   startGame () {
+    console.log("startGame called")
     //create game and write it to server and remove the lobby
-    currentGames.set(Helper.generateId16(), new game.Game("test", this.players))
-    closeLobby()
+    this.server.currentGames.set(Helper.generateId16(), new game.Game("test", this.players))
+    this.closeLobby()
   }
 
   closeLobby () {

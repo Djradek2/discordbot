@@ -28,14 +28,18 @@ module.exports = {
         let lobbyVar = new Lobby.Lobby(interaction, Helper.generateId16(), server)
         const startGameRow = new ActionRowBuilder()
         startGameRow.addComponents(new ButtonBuilder().setCustomId("startgame").setLabel("Start game").setStyle(ButtonStyle.Primary));
-        interaction.reply({
-          content: "Created lobby with code: " + lobbyVar.lobbyCode, ephemeral: true,
-          components: [mainMenuRow]
+        let memberResponse2 = await interaction.reply({
+          content: "Created lobby with code: " + lobbyVar.lobbyCode,
+          components: [startGameRow],
+          ephemeral: true
         })
-        const lobbyCollector = memberResponse.createMessageComponentCollector({
-          time: 6000000,
+        const message = await memberResponse2.interaction.fetchReply(); // You need the message object
+        const filter = i => i.customId === 'ephemeral_click' && i.user.id === memberResponse2.interaction.user.id;
+        const lobbyCollector = message.createMessageComponentCollector({
+          time: 60000,
         });
         lobbyCollector.on('collect', async (interaction) => {
+          interaction.deferUpdate()
           lobbyVar.startGame()
         })
       } else if (interaction.customId === "joinlobby") {
