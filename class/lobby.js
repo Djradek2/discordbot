@@ -21,7 +21,6 @@ class Lobby {
   }
 
   startGame () {
-    console.log("startGame called")
     //create game and write it to server and remove the lobby
     this.server.currentGames.set(Helper.generateId16(), new game.Game("test", this.players))
     this.closeLobby()

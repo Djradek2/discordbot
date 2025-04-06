@@ -9,6 +9,14 @@ class Server {
   removeLobby (id) {
     this.openLobbies.set(id, null)
   }
+
+  loadServerQuestions () {
+
+  }
+
+  loadMaps () {
+    
+  }
 }
 
 module.exports = {

@@ -8,19 +8,32 @@ let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "
 class Game {
   players = []
   regions = new Map() //id -> player
+  regionNames = new Map() //id -> region name
+  regionBorders = new Map() //id -> array of bordering regions
   mapBuffer = null //based off map
   dataBuffer = null //based off map
   pngMap = null
   currentAnswers = new Map //player_id -> answer
+  gameState = "setup" //setup, conquer, battle, finish
 
   constructor (mapName, players) { //write iteslf to server
     this.players = players
     this.mapBuffer = xmljs.xml2js(fs.readFileSync(mapName + ".svg", "utf8"), { compact: true }) //this should actually already be loaded on server start and just be passed to the buffer
     this.dataBuffer = xmljs.xml2js(fs.readFileSync(mapName + ".xml", "utf8"), { compact: true })
+    this.loadRegionData()
+    this.startSetup()
+  }
+
+  loadRegionData () {
     this.dataBuffer.map.region.forEach((region) => {
       this.regions.set(region.id._text, 0)
+      this.regionNames.set(region.id._text, region.name._text)
+      let borderingRegions = []
+      region.borders.border.forEach((border) => {
+        borderingRegions.push(border._text)
+      })
+      this.regionBorders.set(region.id._text, region.borders)
     })
-    this.startSetup()
   }
 
   async updateVisualization () { //still needs to show capitals, and region numbers
@@ -48,33 +61,33 @@ class Game {
 
   async startSetup () {
     const selectionRow = new ActionRowBuilder()
-    const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select your capital!').addOptions(
+    const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select capital location!').addOptions(
       new StringSelectMenuOptionBuilder()
-        .setLabel('Bulbasaur')
-        .setDescription('The dual-type Grass/Poison Seed Pokémon.')
-        .setValue('bulbasaur'),
-      new StringSelectMenuOptionBuilder()
-        .setLabel('Charmander')
-        .setDescription('The Fire-type Lizard Pokémon.')
-        .setValue('charmander'),
-      new StringSelectMenuOptionBuilder()
-        .setLabel('Squirtle')
-        .setDescription('The Water-type Tiny Turtle Pokémon.')
-        .setValue('squirtle'),
+        .setLabel('1')
+        .setDescription('Region Name 1')
+        .setValue('1'),
     );
     selectionRow.addComponents(selectTest)
     await this.updateVisualization()
     this.players[0].editReply({
       content: "Current map:",
       components: [selectionRow],
-      files: [{ attachment: this.pngMap }]
+      files: [{ attachment: this.pngMap }],
+      ephemeral: true
     })
     //this.players[0].followUp({})
-    //send Map
     //select capitals
   }
 
   startRound () {
+
+  }
+
+  endRound () {
+    //will update the player Interactions, which also means every message send needs error handling...
+  }
+
+  addAttackableRegionsToMenu () {
 
   }
 
