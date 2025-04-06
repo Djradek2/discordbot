@@ -18,8 +18,8 @@ class Game {
 
   constructor (mapName, players) { //write iteslf to server
     this.players = players
-    this.mapBuffer = xmljs.xml2js(fs.readFileSync(mapName + ".svg", "utf8"), { compact: true }) //this should actually already be loaded on server start and just be passed to the buffer
-    this.dataBuffer = xmljs.xml2js(fs.readFileSync(mapName + ".xml", "utf8"), { compact: true })
+    this.mapBuffer = xmljs.xml2js(fs.readFileSync("./maps/" + mapName + ".svg", "utf8"), { compact: true }) //this should actually already be loaded on server start and just be passed to the buffer
+    this.dataBuffer = xmljs.xml2js(fs.readFileSync("./maps/" + mapName + ".xml", "utf8"), { compact: true })
     this.loadRegionData()
     this.startSetup()
   }
@@ -29,9 +29,13 @@ class Game {
       this.regions.set(region.id._text, 0)
       this.regionNames.set(region.id._text, region.name._text)
       let borderingRegions = []
-      region.borders.border.forEach((border) => {
-        borderingRegions.push(border._text)
-      })
+      if (region.borders.border.length > 1) {
+        region.borders.border.forEach((border) => {
+          borderingRegions.push(border._text)
+        })
+      } else {
+        borderingRegions.push(region.borders.border._text)
+      }
       this.regionBorders.set(region.id._text, region.borders)
     })
   }
@@ -61,12 +65,7 @@ class Game {
 
   async startSetup () {
     const selectionRow = new ActionRowBuilder()
-    const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select capital location!').addOptions(
-      new StringSelectMenuOptionBuilder()
-        .setLabel('1')
-        .setDescription('Region Name 1')
-        .setValue('1'),
-    );
+    const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select capital location!').addOptions(this.getAllRegionsToSelect());
     selectionRow.addComponents(selectTest)
     await this.updateVisualization()
     this.players[0].editReply({
@@ -91,11 +90,15 @@ class Game {
 
   }
 
-  getAllRegions () {
-    //for capital selection
+  getAllRegionsToSelect () {
+    let allRegions = []
+    this.regionNames.forEach((id, name) => {
+      allRegions.push(new StringSelectMenuOptionBuilder().setLabel(id).setDescription(name).setValue(id))
+    })
+    return allRegions
   }
 
-  getConquerableRegions () {
+  getConquerableRegionsToSelect () {
     //first border, if none then anywhere
   }
 

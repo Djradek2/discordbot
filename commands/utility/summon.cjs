@@ -34,10 +34,8 @@ module.exports = {
           components: [startGameRow],
           ephemeral: true
         })
-        //const message = await memberResponse2.interaction.fetchReply(); // You need the message object
-        //const filter = i => i.customId === 'ephemeral_click' && i.user.id === memberResponse2.interaction.user.id;
         const lobbyCollector = memberResponse2.createMessageComponentCollector({
-          time: 60000,
+          time: 6000000,
         });
         lobbyCollector.on('collect', async (interaction3) => {
           interaction3.deferUpdate()

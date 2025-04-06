@@ -22,7 +22,7 @@ class Lobby {
 
   startGame () {
     //create game and write it to server and remove the lobby
-    this.server.currentGames.set(Helper.generateId16(), new game.Game("test", this.players))
+    this.server.currentGames.set(Helper.generateId16(), new game.Game("cz", this.players))
     this.closeLobby()
   }
 
