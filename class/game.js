@@ -6,15 +6,22 @@ const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder
 let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "#ff01f5", "#7f7f7f", "#fec80e"]
 
 class Game {
-  players = []
+  players = null //map
+  listeners = new Map() //interaction.user.username -> 
   regions = new Map() //id -> player
   regionNames = new Map() //id -> region name
   regionBorders = new Map() //id -> array of bordering regions
   mapBuffer = null //based off map
   dataBuffer = null //based off map
   pngMap = null
-  currentAnswers = new Map //player_id -> answer
+  currentIntent = new Map //interaction.user -> region_id
+  currentAnswers = new Map() //player_id -> answer
   gameState = "setup" //setup, conquer, battle, finish
+
+  capitalTimer = 20 //<t:1743937140:R>
+  conquestTimer = 20
+  selectQTest = 15
+  speedQTimer = 15
 
   constructor (mapName, players) { //write iteslf to server
     this.players = players
@@ -51,7 +58,7 @@ class Game {
   }
 
   sendMapToPlayers () {
-    players.forEach(client => {
+    this.players.forEach(client => {
       client.reply({
         content: "Current map:",
         files: [{ attachment: this.pngMap }]
@@ -68,12 +75,36 @@ class Game {
     const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select capital location!').addOptions(this.getAllRegionsToSelect());
     selectionRow.addComponents(selectTest)
     await this.updateVisualization()
-    this.players[0].editReply({
-      content: "Current map:",
-      components: [selectionRow],
-      files: [{ attachment: this.pngMap }],
-      ephemeral: true
+    this.players.forEach(async (interaction, user) => {
+      let memberResponse = await interaction.editReply({
+        content: "Current map:",
+        components: [selectionRow],
+        files: [{ attachment: this.pngMap }],
+        ephemeral: true
+      })
+      const lobbyCollector = memberResponse.createMessageComponentCollector({
+        time: 6000000,
+      });
+      lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+        this.currentIntent.set(user, interaction2.values[0])
+        console.log(this.currentIntent)
+      })
+      this.listeners.set(user, lobbyCollector)
     })
+    // let memberResponse = this.players[0].editReply({ //this should be done to everyone in players
+    //   content: "Current map:",
+    //   components: [selectionRow],
+    //   files: [{ attachment: this.pngMap }],
+    //   ephemeral: true
+    // })
+    // const lobbyCollector = memberResponse.createMessageComponentCollector({
+    //   time: 6000000,
+    // });
+    // lobbyCollector.on('collect', async (interaction) => {
+    //   interaction.deferUpdate()
+    //   this.currentIntent
+    // })
+
     //this.players[0].followUp({})
     //select capitals
   }
@@ -92,8 +123,8 @@ class Game {
 
   getAllRegionsToSelect () {
     let allRegions = []
-    this.regionNames.forEach((id, name) => {
-      allRegions.push(new StringSelectMenuOptionBuilder().setLabel(id).setDescription(name).setValue(id))
+    this.regionNames.forEach((name, id) => {
+      allRegions.push(new StringSelectMenuOptionBuilder().setLabel(name).setDescription(id).setValue(id))
     })
     return allRegions
   }

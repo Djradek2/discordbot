@@ -2,13 +2,13 @@ const game = require('./game.js')
 const Helper = require("./utility/helper.js")
 
 class Lobby {
-  players = []
+  players = new Map() //interaction.user -> interaction
   lobbyCode = "" //16 numbers, do you think collisions will happen?
   mapName = ""
   server = null
   
   constructor (host, lobbyCode, server) {
-    this.players[0] = host
+    this.players.set(host.user.username, host)
     this.lobbyCode = lobbyCode
     this.server = server
     server.openLobbies.set(lobbyCode, this)
