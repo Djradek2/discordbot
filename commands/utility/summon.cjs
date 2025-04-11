@@ -26,18 +26,19 @@ module.exports = {
       if (interaction2.customId === "queueUp"){
 
       } else if (interaction2.customId === "hostlobby") {
+        interaction2.deferUpdate()
         let lobbyVar = new Lobby.Lobby(interaction, Helper.generateId16(), server)
         const startGameRow = new ActionRowBuilder()
         startGameRow.addComponents(new ButtonBuilder().setCustomId("startgame").setLabel("Start game").setStyle(ButtonStyle.Primary));
-        let memberResponse2 = await interaction.editReply({
+        let memberResponse2 = await interaction.followUp({
           content: "Created lobby with code: " + lobbyVar.lobbyCode,
           components: [startGameRow],
           ephemeral: true
         })
-        const lobbyCollector = memberResponse2.createMessageComponentCollector({
+        let lobbyCollector = memberResponse2.createMessageComponentCollector({
           time: 6000000,
         });
-        lobbyCollector.on('collect', async (interaction3) => {
+        lobbyCollector.on('collect', async (interaction3) => { //this never stops collecting...
           interaction3.deferUpdate()
           lobbyVar.startGame()
         })

@@ -76,8 +76,8 @@ class Game {
     selectionRow.addComponents(selectTest)
     await this.updateVisualization()
     this.players.forEach(async (interaction, user) => {
-      let memberResponse = await interaction.editReply({
-        content: "Current map:",
+      let memberResponse = await interaction.followUp({ //add capitalTimer
+        content: "Capital selection, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.capitalTimer) + ":R>",
         components: [selectionRow],
         files: [{ attachment: this.pngMap }],
         ephemeral: true
@@ -86,12 +86,14 @@ class Game {
         time: 6000000,
       });
       lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+        interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
         this.currentIntent.set(user, interaction2.values[0])
         console.log(this.currentIntent)
       })
       this.listeners.set(user, lobbyCollector)
+      //spawn 
     })
-    // let memberResponse = this.players[0].editReply({ //this should be done to everyone in players
+    // let memberResponse = this.players[0].followUp({ //this should be done to everyone in players
     //   content: "Current map:",
     //   components: [selectionRow],
     //   files: [{ attachment: this.pngMap }],
@@ -107,6 +109,10 @@ class Game {
 
     //this.players[0].followUp({})
     //select capitals
+  }
+
+  capitalHandler () {
+    //check intents, if uncontested, then hand them over and start CONQUER PHASE and startRound
   }
 
   startRound () {
