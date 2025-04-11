@@ -6,7 +6,7 @@ const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder
 let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "#ff01f5", "#7f7f7f", "#fec80e"]
 
 class Game {
-  players = null //map
+  players = null //interaction.user -> interaction
   listeners = new Map() //interaction.user.username -> 
   regions = new Map() //id -> player
   regionNames = new Map() //id -> region name
@@ -91,28 +91,38 @@ class Game {
         console.log(this.currentIntent)
       })
       this.listeners.set(user, lobbyCollector)
-      //spawn 
+      //spawn a 20 sec coroutine of capitalHandler
+      setTimeout(() => {
+        this.capitalHandler()
+      }, this.capitalTimer * 100)
     })
-    // let memberResponse = this.players[0].followUp({ //this should be done to everyone in players
-    //   content: "Current map:",
-    //   components: [selectionRow],
-    //   files: [{ attachment: this.pngMap }],
-    //   ephemeral: true
-    // })
-    // const lobbyCollector = memberResponse.createMessageComponentCollector({
-    //   time: 6000000,
-    // });
-    // lobbyCollector.on('collect', async (interaction) => {
-    //   interaction.deferUpdate()
-    //   this.currentIntent
-    // })
-
-    //this.players[0].followUp({})
-    //select capitals
   }
 
   capitalHandler () {
-    //check intents, if uncontested, then hand them over and start CONQUER PHASE and startRound
+    //deal with people who didnt put intent
+    console.log(this.players.size)
+    if (this.currentIntent.length !== this.players.size) {
+      console.log("this runs")
+      this.players.forEach((value, key) => {
+        if (!this.currentIntent.get(key)) {
+          this.currentIntent.set(key, Math.floor(Math.random() * this.regions.size))
+        }
+      })
+    }
+
+    let contested = new Map() //regionId -> [interaction.user]
+    this.currentIntent.forEach((value, key) => {
+      if (!contested.get(key)) {
+        contested.set(key, [])
+      }
+      let playerArray = contested.get(key)
+      playerArray.push(value)
+      contested.set(key, playerArray)
+    })
+
+    console.log(this.currentIntent)
+    console.log(contested)
+    //check intents, if uncontested, then hand them over and start CONQUER PHASE and startRound, else serve a speed question to anyone fighting
   }
 
   startRound () {
