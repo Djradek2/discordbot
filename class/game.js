@@ -28,6 +28,9 @@ class Game {
     this.mapBuffer = xmljs.xml2js(fs.readFileSync("./maps/" + mapName + ".svg", "utf8"), { compact: true }) //this should actually already be loaded on server start and just be passed to the buffer
     this.dataBuffer = xmljs.xml2js(fs.readFileSync("./maps/" + mapName + ".xml", "utf8"), { compact: true })
     this.loadRegionData()
+
+    console.log(players)
+
     this.startSetup()
   }
 
@@ -90,10 +93,10 @@ class Game {
         this.currentIntent.set(user, interaction2.values[0])
       })
       //this.listeners.set(user, lobbyCollector)
-      setTimeout(() => {
-        this.capitalHandler()
-      }, this.capitalTimer * 100)
     })
+    setTimeout(() => {
+      this.capitalHandler()
+    }, this.capitalTimer * 100)
   }
 
   capitalHandler () {

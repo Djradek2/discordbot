@@ -7,7 +7,7 @@ class Server {
   constructor () {}
 
   addLobby (lobby) {
-    this.openLobbies.set(lobby.lobbycode, lobby)
+    this.openLobbies.set(lobby.lobbyCode, lobby)
   }
 
   removeLobby (id) {
@@ -17,6 +17,7 @@ class Server {
   attemptJoinLobby (id, player) {
     if (this.openLobbies.has(id)) {
       this.openLobbies.get(id).joinGame(player)
+      console.log('user ' + player.user.username + " sucessfully joined lobby " + id)
     }
   }
 

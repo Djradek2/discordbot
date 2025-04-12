@@ -15,8 +15,8 @@ class Lobby {
   }
 
   joinGame (player) {
-    if(this.players.length < 8){
-      this.players.push(player)
+    if(this.players.size < 8){
+      this.players.set(player.user, player)
     }
   }
 

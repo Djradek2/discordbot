@@ -3,7 +3,7 @@ const Helper = require("../../class/utility/helper.js")
 const xmljs = require("xml-js");
 const fs = require("pn/fs");
 
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js'); // SlashCommandBuilder
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, TextInputBuilder, TextInputStyle, ModalBuilder } = require('discord.js'); // SlashCommandBuilder
 
 module.exports = {
   name: "summon",
@@ -43,11 +43,38 @@ module.exports = {
           lobbyVar.startGame()
         })
       } else if (interaction2.customId === "joinlobby") {
-        interaction2.deferUpdate()
+        //interaction2.deferUpdate()
+        
+        const joinModal = new ModalBuilder().setCustomId('lobbyModal').setTitle('Enter Lobby Code')
         const joinLobbyRow = new ActionRowBuilder()
-        joinLobbyRow.addComponents(new ButtonBuilder().setCustomId("startgame").setLabel("Start game").setStyle(ButtonStyle.Primary));
-        
-        
+        joinLobbyRow.addComponents(new TextInputBuilder().setCustomId("lobbycode").setLabel("lobby id").setStyle(TextInputStyle.Short));
+        joinModal.addComponents(joinLobbyRow)
+
+        // let memberResponse2 = await interaction.followUp({
+        //   content: "Enter lobby code",
+        //   ephemeral: true
+        // })
+        // let lobbyCollector = memberResponse2.createMessageComponentCollector({
+        //   time: 6000000,
+        // });
+        // lobbyCollector.on('collect', async (interaction3) => { //never stops collecting if using editReply instead of followUp
+        //   interaction3.deferUpdate()
+        //   console.log("lobby join attempt")
+        // })
+
+        await interaction2.showModal(joinModal)
+        let modalCollector = await interaction2.awaitModalSubmit({
+          time: 6000000,
+          filter: i => i.user.id === interaction2.user.id,
+        })
+        if (modalCollector) {
+          if (modalCollector.fields.fields.get('lobbycode').value) {
+            server.attemptJoinLobby(modalCollector.fields.fields.get('lobbycode').value, interaction2)
+          }
+        }
+
+
+
         //server.attemptJoinLobby()
       } else if (interaction2.customId === "langselect") {
         
