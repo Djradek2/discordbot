@@ -7,8 +7,8 @@ let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "
 
 class Game {
   players = null //interaction.user -> interaction
-  listeners = new Map() //interaction.user.username -> 
-  regions = new Map() //id -> player
+  listeners = new Map() //interaction.user -> 
+  regions = new Map() //regionId -> interaction.user
   regionNames = new Map() //id -> region name
   regionBorders = new Map() //id -> array of bordering regions
   mapBuffer = null //based off map
@@ -54,7 +54,6 @@ class Game {
     })
     const updatedBuffer = xmljs.js2xml(visualBuffer, { compact: true, spaces: 2 })
     this.pngMap = await svg2png(updatedBuffer)
-    //fs.writeFileSync("visualized_game.svg", updatedBuffer, "utf8");
   }
 
   sendMapToPlayers () {
@@ -67,6 +66,7 @@ class Game {
   }
 
   setOwner (regionId, playerId) {
+    console.log(playerId.username + " became owner of " + regionId)
     this.regions.set(String(regionId), playerId)
   }
 
@@ -88,10 +88,8 @@ class Game {
       lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
         interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
         this.currentIntent.set(user, interaction2.values[0])
-        console.log(this.currentIntent)
       })
-      this.listeners.set(user, lobbyCollector)
-      //spawn a 20 sec coroutine of capitalHandler
+      //this.listeners.set(user, lobbyCollector)
       setTimeout(() => {
         this.capitalHandler()
       }, this.capitalTimer * 100)
@@ -99,10 +97,7 @@ class Game {
   }
 
   capitalHandler () {
-    //deal with people who didnt put intent
-    console.log(this.players.size)
-    if (this.currentIntent.length !== this.players.size) {
-      console.log("this runs")
+    if (this.currentIntent.length !== this.players.size) { //randomize players who dont have intent
       this.players.forEach((value, key) => {
         if (!this.currentIntent.get(key)) {
           this.currentIntent.set(key, Math.floor(Math.random() * this.regions.size))
@@ -111,18 +106,22 @@ class Game {
     }
 
     let contested = new Map() //regionId -> [interaction.user]
-    this.currentIntent.forEach((value, key) => {
-      if (!contested.get(key)) {
-        contested.set(key, [])
+    this.currentIntent.forEach((value, key) => { //regionId, interaction.user
+      if (!contested.get(value)) {
+        contested.set(value, [])
       }
-      let playerArray = contested.get(key)
-      playerArray.push(value)
-      contested.set(key, playerArray)
+      let contestingPlayers = contested.get(value)
+      contestingPlayers.push(key)
+      contested.set(value, contestingPlayers)
     })
 
-    console.log(this.currentIntent)
-    console.log(contested)
-    //check intents, if uncontested, then hand them over and start CONQUER PHASE and startRound, else serve a speed question to anyone fighting
+    contested.forEach((contestants, regionId) => {
+      if (contestants.length > 1) {
+
+      } else {
+        this.setOwner(regionId, contestants[0])
+      }
+    });
   }
 
   startRound () {

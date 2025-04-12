@@ -38,12 +38,17 @@ module.exports = {
         let lobbyCollector = memberResponse2.createMessageComponentCollector({
           time: 6000000,
         });
-        lobbyCollector.on('collect', async (interaction3) => { //this never stops collecting...
+        lobbyCollector.on('collect', async (interaction3) => { //this never stops collecting with editReply...
           interaction3.deferUpdate()
           lobbyVar.startGame()
         })
       } else if (interaction2.customId === "joinlobby") {
+        interaction2.deferUpdate()
+        const joinLobbyRow = new ActionRowBuilder()
+        joinLobbyRow.addComponents(new ButtonBuilder().setCustomId("startgame").setLabel("Start game").setStyle(ButtonStyle.Primary));
         
+        
+        //server.attemptJoinLobby()
       } else if (interaction2.customId === "langselect") {
         
       }

@@ -8,10 +8,10 @@ class Lobby {
   server = null
   
   constructor (host, lobbyCode, server) {
-    this.players.set(host.user.username, host)
+    this.players.set(host.user, host)
     this.lobbyCode = lobbyCode
     this.server = server
-    server.openLobbies.set(lobbyCode, this)
+    server.addLobby(this)
   }
 
   joinGame (player) {

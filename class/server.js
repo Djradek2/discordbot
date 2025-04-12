@@ -6,8 +6,18 @@ class Server {
   
   constructor () {}
 
+  addLobby (lobby) {
+    this.openLobbies.set(lobby.lobbycode, lobby)
+  }
+
   removeLobby (id) {
     this.openLobbies.set(id, null)
+  }
+
+  attemptJoinLobby (id, player) {
+    if (this.openLobbies.has(id)) {
+      this.openLobbies.get(id).joinGame(player)
+    }
   }
 
   loadServerQuestions () {
