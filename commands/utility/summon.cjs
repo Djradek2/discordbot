@@ -50,6 +50,16 @@ module.exports = {
         joinLobbyRow.addComponents(new TextInputBuilder().setCustomId("lobbycode").setLabel("lobby id").setStyle(TextInputStyle.Short));
         joinModal.addComponents(joinLobbyRow)
 
+        await interaction2.showModal(joinModal)
+        let modalCollector = await interaction2.awaitModalSubmit({
+          time: 6000000,
+          filter: i => i.user.id === interaction2.user.id,
+        })
+        if (modalCollector) {
+          if (modalCollector.fields.fields.get('lobbycode').value) {
+            server.attemptJoinLobby(modalCollector.fields.fields.get('lobbycode').value, interaction2)
+          }
+        }
         // let memberResponse2 = await interaction.followUp({
         //   content: "Enter lobby code",
         //   ephemeral: true
@@ -61,21 +71,6 @@ module.exports = {
         //   interaction3.deferUpdate()
         //   console.log("lobby join attempt")
         // })
-
-        await interaction2.showModal(joinModal)
-        let modalCollector = await interaction2.awaitModalSubmit({
-          time: 6000000,
-          filter: i => i.user.id === interaction2.user.id,
-        })
-        if (modalCollector) {
-          if (modalCollector.fields.fields.get('lobbycode').value) {
-            server.attemptJoinLobby(modalCollector.fields.fields.get('lobbycode').value, interaction2)
-          }
-        }
-
-
-
-        //server.attemptJoinLobby()
       } else if (interaction2.customId === "langselect") {
         
       }

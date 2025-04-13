@@ -1,7 +1,7 @@
 const xmljs = require("xml-js");
 const fs = require("pn/fs");
 const svg2png = require("svg2png");
-const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder } = require('discord.js');
+const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, ModalBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "#ff01f5", "#7f7f7f", "#fec80e"]
 
@@ -15,13 +15,16 @@ class Game {
   dataBuffer = null //based off map
   pngMap = null
   currentIntent = new Map //interaction.user -> region_id
-  currentAnswers = new Map() //player_id -> answer
   gameState = "setup" //setup, conquer, battle, finish
 
-  capitalTimer = 20 //<t:1743937140:R>
+  capitalTimer = 15 //<t:1743937140:R>
   conquestTimer = 20
   selectQTest = 15
   speedQTimer = 15
+
+  currentCorrectAnswers = new Map() //player_id -> correctAnswer
+  evaluatableChoiceQuestions = new Map() //region_id -> {int.user : answer}
+  evaluatableSpeedQuestions = new Map()
 
   constructor (mapName, players) { //write iteslf to server
     this.players = players
@@ -86,20 +89,21 @@ class Game {
         ephemeral: true
       })
       const lobbyCollector = memberResponse.createMessageComponentCollector({
-        time: 6000000,
+        time: this.capitalTimer * 1000,
       });
       lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
         interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+        this.players.set(interaction2.user, interaction2)
         this.currentIntent.set(user, interaction2.values[0])
       })
       //this.listeners.set(user, lobbyCollector)
     })
     setTimeout(() => {
       this.capitalHandler()
-    }, this.capitalTimer * 100)
+    }, this.capitalTimer * 1000)
   }
 
-  capitalHandler () {
+  async capitalHandler () {
     if (this.currentIntent.length !== this.players.size) { //randomize players who dont have intent
       this.players.forEach((value, key) => {
         if (!this.currentIntent.get(key)) {
@@ -120,11 +124,18 @@ class Game {
 
     contested.forEach((contestants, regionId) => {
       if (contestants.length > 1) {
-
+        this.serveSpeedQuestion(contestants)
       } else {
         this.setOwner(regionId, contestants[0])
       }
     });
+    setTimeout(() => {
+      this.evaluateAnswers()
+    }, this.capitalTimer * 1000)
+  }
+
+  evaluateAnswers () {
+
   }
 
   startRound () {
@@ -155,8 +166,39 @@ class Game {
 
   }
 
-  serveSpeedQuestion () {
+  async serveSpeedQuestion (players, region) { //this will only save the player answers (and their time of entry) and setup the correct ones
+    const questionModal = new ModalBuilder().setCustomId('speedQuestion').setTitle('QUESTION TEXT HERE')
+    const questionRow = new ActionRowBuilder()
+    questionRow.addComponents(new TextInputBuilder().setCustomId("questionAnswer").setLabel("answer").setStyle(TextInputStyle.Short)); //should only accept numbers
+    questionModal.addComponents(questionRow)
 
+    players.forEach(async (contestant) => {
+      let interaction = this.players.get(contestant)
+      const startAnswerRow = new ActionRowBuilder()
+      startAnswerRow.addComponents(new ButtonBuilder().setCustomId("questionAnswer").setLabel("Answer question").setStyle(ButtonStyle.Primary));
+      let memberResponse = await interaction.followUp({
+        content: "Q: QUESTION TEXT HERE",
+        components: [startAnswerRow],
+        ephemeral: true
+      })
+      let lobbyCollector = memberResponse.createMessageComponentCollector({
+        time: this.capitalTimer * 1000,
+      });
+
+      lobbyCollector.on('collect', async (interaction2) => { //this never stops collecting with editReply...
+        await interaction2.showModal(questionModal)
+        let modalCollector = await interaction2.awaitModalSubmit({
+          time: this.capitalTimer * 1000,
+          filter: i => i.user.id === interaction2.user.id,
+        })
+        if (modalCollector) {
+          if (modalCollector.fields.fields.get('questionAnswer').value) {
+            //deferReply
+            console.log(modalCollector.fields.fields.get('questionAnswer').value)
+          }
+        }
+      })
+    })
   }
 
   setAnswer (player, answer) {
