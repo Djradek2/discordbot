@@ -125,7 +125,7 @@ class Game {
     }, this.capitalTimer * 1000)
   }
 
-  async startConquer () {
+  async startConquerTurn () {
 
   }
  
@@ -220,17 +220,66 @@ class Game {
       await this.updateVisualization()
       this.sendMapToPlayers() //not necessary
       this.gameState = "conquer"
+      this.cleanTemporaryVariables()
+      this.startConquerTurn()
     }
     //will update the player Interactions, which also means every message send needs error handling...
     //clean all the temporary game stuff
     //start the next round based off the round settings
   }
 
-  addConquerableRegionsToMenu (player) {
-    foreach
+  cleanTemporaryVariables() {
+
   }
 
-  addAttackableRegionsToMenu (player) {
+  addConquerableRegionsToMenu () {
+    let playerConquerableRegions = this.getConquerableRegionsOfPlayers()
+    let playerConquerRows = new Map()
+    
+    playerConquerableRegions.forEach((regions, player) => {
+      let selectionRow = new ActionRowBuilder()
+      let selectConquer = new StringSelectMenuBuilder().setCustomId('conquerLocation').setPlaceholder('Select region to conquer!')
+      regions.forEach((region) => {
+        selectConquer.addOptions(StringSelectMenuOptionBuilder().setLabel(this.regionNames.get(region)).setDescription(region).setValue(region))
+      })
+      selectionRow.addComponents(selectConquer)
+      playerConquerRows.set(player, selectionRow)
+    })
+    return playerConquerRows
+  }
+
+  getConquerableRegionsOfPlayers () {
+    let conquerableRegions = new Map()
+    this.regionOwners.forEach((owner, region) => {
+      if (!conquerableRegions.has(owner)) {
+        conquerableRegions.set(owner, new Set())
+      }
+      let borderIds = this.borderingRegions.get(region)
+      let borderSet = conquerableRegions.get(owner)
+      borderIds.forEach((borderingId) => {
+        if (this.regionOwners.get(borderingId) === 0) {
+          borderSet.add(borderingId)
+        }
+      })
+      if (borderSet.size === 0) {
+        borderSet = this.getUnownedRegions()
+      }
+      conquerableRegions.set(owner, borderSet)
+    })
+    return conquerableRegions
+  }
+
+  getUnownedRegions () {
+    let unownedRegions = new Set()
+    this.regionOwners.forEach((owner, region) => {
+      if (owner === 0) {
+        unownedRegions.add(region)
+      }
+    })
+    return unownedRegions
+  }
+
+  addAttackableRegionsToMenu () { //players without a region cannot attack capitals
 
   }
 
