@@ -15,14 +15,14 @@ class Game {
   mapBuffer = null //based off map
   dataBuffer = null //based off map
   pngMap = null
-  currentIntent = new Map //interaction.user -> region_id
   gameState = "setup" //setup, conquer, battle, finish
 
   capitalTimer = 10 //<t:1743937140:R>
-  conquestTimer = 20
+  conquestTimer = 15
   selectQTest = 15
   speedQTimer = 15
 
+  currentIntent = new Map() //interaction.user -> region_id
   currentChoiceAnswers = new Map()
   currentSpeedAnswers = new Map() //region -> correctAnswer
   evalChoiceQuestions = new Map() //region_id -> {int.user -> answer}
@@ -58,7 +58,7 @@ class Game {
       } else {
         borderingRegions.push(region.borders.border._text)
       }
-      this.regionBorders.set(region.id._text, region.borders)
+      this.regionBorders.set(region.id._text, borderingRegions)
     })
   }
 
@@ -126,7 +126,29 @@ class Game {
   }
 
   async startConquerTurn () {
+    //get a universal choice question, when both correct on contested region get a speed question
 
+    let rowsToSend = this.addConquerableRegionsToMenu()
+    await this.updateVisualization()
+    this.players.forEach(async (interaction, user) => {
+      let memberResponse = await interaction.followUp({ //add capitalTimer
+        content: "Select region to conquer, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.conquestTimer) + ":R>",
+        components: [rowsToSend.get(user)],
+        files: [{ attachment: this.pngMap }],
+        ephemeral: true
+      })
+      const lobbyCollector = memberResponse.createMessageComponentCollector({
+        time: this.conquestTimer * 1000,
+      });
+      lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+        interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+        this.players.set(interaction2.user, interaction2)
+        this.currentIntent.set(user, interaction2.values[0])
+      })
+    })
+    // setTimeout(() => {
+    //   this.conquerHandler()
+    // }, this.conquestTimer * 1000)
   }
  
   handleSetupLosers () {
@@ -162,17 +184,23 @@ class Game {
       contested.set(value, contestingPlayers)
     })
 
+    let contestedBool = false
     contested.forEach((contestants, regionId) => {
       if (contestants.length > 1) {
+        contestedBool = true
         this.serveSpeedQuestion(contestants, regionId)
       } else {
         this.playerWonQuestion.set(contestants[0], true)
         this.setOwner(regionId, contestants[0])
       }
     });
-    setTimeout(() => {
-      this.evaluateAnswers()
-    }, this.capitalTimer * 1000)
+    if (contestedBool) {
+      setTimeout(() => {
+        this.evaluateAnswers()
+      }, this.capitalTimer * 1000)
+    } else {
+      this.endRound()
+    }
   }
 
   evaluateAnswers () {
@@ -219,17 +247,25 @@ class Game {
       this.handleSetupLosers()
       await this.updateVisualization()
       this.sendMapToPlayers() //not necessary
-      this.gameState = "conquer"
       this.cleanTemporaryVariables()
       this.startConquerTurn()
+      this.gameState = "conquer"
     }
     //will update the player Interactions, which also means every message send needs error handling...
-    //clean all the temporary game stuff
     //start the next round based off the round settings
   }
 
-  cleanTemporaryVariables() {
+  cleanTemporaryVariables () {
+    this.currentIntent = new Map()
+    this.playerWonQuestion = new Map()
+    this.clearAnswers()
+  }
 
+  clearAnswers () { //if doing both choice and speed questions
+    this.currentChoiceAnswers = new Map()
+    this.currentSpeedAnswers = new Map()
+    this.evalChoiceQuestions = new Map()
+    this.evalSpeedQuestions = new Map()
   }
 
   addConquerableRegionsToMenu () {
@@ -240,7 +276,7 @@ class Game {
       let selectionRow = new ActionRowBuilder()
       let selectConquer = new StringSelectMenuBuilder().setCustomId('conquerLocation').setPlaceholder('Select region to conquer!')
       regions.forEach((region) => {
-        selectConquer.addOptions(StringSelectMenuOptionBuilder().setLabel(this.regionNames.get(region)).setDescription(region).setValue(region))
+        selectConquer.addOptions(new StringSelectMenuOptionBuilder().setLabel(this.regionNames.get(region)).setDescription(region).setValue(region))
       })
       selectionRow.addComponents(selectConquer)
       playerConquerRows.set(player, selectionRow)
@@ -251,20 +287,24 @@ class Game {
   getConquerableRegionsOfPlayers () {
     let conquerableRegions = new Map()
     this.regionOwners.forEach((owner, region) => {
-      if (!conquerableRegions.has(owner)) {
-        conquerableRegions.set(owner, new Set())
-      }
-      let borderIds = this.borderingRegions.get(region)
-      let borderSet = conquerableRegions.get(owner)
-      borderIds.forEach((borderingId) => {
-        if (this.regionOwners.get(borderingId) === 0) {
-          borderSet.add(borderingId)
+      if (owner !== 0) {
+        if (!conquerableRegions.has(owner)) {
+          conquerableRegions.set(owner, new Set())
         }
-      })
-      if (borderSet.size === 0) {
-        borderSet = this.getUnownedRegions()
+        let borderSet = conquerableRegions.get(owner)
+        let borderIds = this.regionBorders.get(region)
+        borderIds.forEach((borderingId) => {
+          if (this.regionOwners.get(borderingId) === 0) {
+            borderSet.add(borderingId)
+          }
+        })
+        conquerableRegions.set(owner, borderSet)
       }
-      conquerableRegions.set(owner, borderSet)
+    })
+    conquerableRegions.forEach((borderingIds, player) => {
+      if (borderingIds.size === 0) {
+        conquerableRegions.set(player, this.getUnownedRegions())
+      }
     })
     return conquerableRegions
   }
@@ -354,16 +394,8 @@ class Game {
 
   }
 
-  setAnswer (player, answer) {
+  setAnswer (player, answer) { //you can move some of the serve question code here
 
-  }
-
-  checkAnswers () {
-
-  }
-
-  clearAnswers () {
-    //just foreach over the answer holder
   }
 }
 
