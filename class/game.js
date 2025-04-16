@@ -234,8 +234,33 @@ class Game {
       })
       this.setOwner(region, closestPlayer) //problem with capitals
     })
-    this.endRound()
-    //this.evalChoiceQuestions.forEach((answers, region) => {}
+
+    let contestedWinners = new Map() 
+    this.evalChoiceQuestions.forEach((answers, region) => {
+      let playersCorrectAnswer = []
+      if(this.gameState === "conquer") {
+        answers.forEach((answer, player) => {
+          if (answer === this.currentChoiceAnswers[region]) {
+            playersCorrectAnswer.push(player)
+          }
+        })
+      }
+      if (playersCorrectAnswer.length > 1) {
+        contestedWinners.set(region, playersCorrectAnswer)
+      } else if (playersCorrectAnswer.length === 1) {
+        this.setOwner(region, playersCorrectAnswer[0])
+      }
+    })
+
+    if (this.gameState === "setup") {
+      this.endRound() //this cant be here except for setup phase
+    }
+    if (this.gameState === "conquer") {
+      //if there are contested winners send speed question, otherwise end round
+      if (contestedWinners.size === 0) {
+        this.endRound()
+      }
+    }
   }
 
   startRound () {
@@ -335,8 +360,36 @@ class Game {
     //first border, if none then anywhere
   }
 
-  serveChoiceQuestion () {
+  async serveChoiceQuestion (players, region) {
+    this.currentSpeedAnswers.set(region, "answer2")
 
+    const answerRow = new ActionRowBuilder()
+    answerRow.addComponents(new ButtonBuilder().setCustomId("answer1").setLabel("Answer 1").setStyle(ButtonStyle.Primary))
+    answerRow.addComponents(new ButtonBuilder().setCustomId("answer2").setLabel("Answer 2").setStyle(ButtonStyle.Primary))
+    answerRow.addComponents(new ButtonBuilder().setCustomId("answer3").setLabel("Answer 3").setStyle(ButtonStyle.Primary))
+    answerRow.addComponents(new ButtonBuilder().setCustomId("answer4").setLabel("Answer 4").setStyle(ButtonStyle.Primary))
+
+    players.forEach(async (contestant) => {
+      let interaction = this.players.get(contestant)
+
+      let memberResponse = await interaction.followUp({
+        content: "Which answer do you like?",
+        components: [answerRow],
+      });
+
+      const collector = memberResponse.createMessageComponentCollector({
+        time: this.conquestTimer * 1000,
+      });
+
+      collector.on('collect', async (interaction2) => {
+        if (!this.evalChoiceQuestions.has(region)) {
+          this.evalChoiceQuestions.set(region, new Map())
+        }
+        let answerMap = this.evalSpeedQuestions.get(region)
+        answerMap.set(interaction2.user, interaction2.customId)
+        this.evalChoiceQuestions.set(region, answerMap)
+      });
+    })
   }
 
   async serveSpeedQuestion (players, region) { //this will only save the player answers (and their time of entry) and setup the correct 
