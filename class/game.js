@@ -16,6 +16,7 @@ class Game {
   dataBuffer = null //based off map
   pngMap = null
   gameState = "setup" //setup, conquer, battle, finish
+  turnState = "1" //if at choice or speed question state of the round
 
   capitalTimer = 10 //<t:1743937140:R>
   conquestTimer = 15
@@ -146,9 +147,28 @@ class Game {
         this.currentIntent.set(user, interaction2.values[0])
       })
     })
-    // setTimeout(() => {
-    //   this.conquerHandler()
-    // }, this.conquestTimer * 1000)
+    setTimeout(() => {
+      this.conquerHandler()
+    }, this.conquestTimer * 1000)
+  }
+
+  conquerHandler () {
+    let targettedRegions = new Map()
+    this.currentIntent.forEach((region, player) => {
+      if (!targettedRegions.has(region)) {
+        targettedRegions.set(region, [player])
+      } else {
+        let targettingPlayers = targettedRegions.get(region)
+        targettingPlayers.push(player)
+        targettedRegions.set(region, targettingPlayers)
+      }
+    })
+    targettedRegions.forEach((players, region) => {
+      this.serveChoiceQuestion(players, region)
+    })
+    setTimeout(() => {
+      this.evaluateAnswers()
+    }, this.conquestTimer * 1000)
   }
  
   handleSetupLosers () {
@@ -203,7 +223,7 @@ class Game {
     }
   }
 
-  evaluateAnswers () {
+  async evaluateAnswers () {
     this.evalSpeedQuestions.forEach((answers, region) => {
       let playerCloseness = [] //array of maps
       let closestPlayer = null
@@ -240,7 +260,7 @@ class Game {
       let playersCorrectAnswer = []
       if(this.gameState === "conquer") {
         answers.forEach((answer, player) => {
-          if (answer === this.currentChoiceAnswers[region]) {
+          if (answer === this.currentChoiceAnswers.get(region)) {
             playersCorrectAnswer.push(player)
           }
         })
@@ -259,6 +279,14 @@ class Game {
       //if there are contested winners send speed question, otherwise end round
       if (contestedWinners.size === 0) {
         this.endRound()
+      } else {
+        this.clearAnswers()
+        contestedWinners.forEach((players, region) => {
+          this.serveSpeedQuestion(players, region)
+        })
+        setTimeout(() => {
+          this.evaluateAnswers()
+        }, this.conquestTimer * 1000)
       }
     }
   }
@@ -268,10 +296,15 @@ class Game {
   }
 
   async endRound () {
+    if (this.gameState === "conquer") {
+      await this.updateVisualization()
+      this.sendMapToPlayers()
+      this.cleanTemporaryVariables()
+    }
     if (this.gameState === "setup") {
       this.handleSetupLosers()
       await this.updateVisualization()
-      this.sendMapToPlayers() //not necessary
+      //this.sendMapToPlayers() //not necessary
       this.cleanTemporaryVariables()
       this.startConquerTurn()
       this.gameState = "conquer"
@@ -361,7 +394,7 @@ class Game {
   }
 
   async serveChoiceQuestion (players, region) {
-    this.currentSpeedAnswers.set(region, "answer2")
+    this.currentChoiceAnswers.set(region, "answer2")
 
     const answerRow = new ActionRowBuilder()
     answerRow.addComponents(new ButtonBuilder().setCustomId("answer1").setLabel("Answer 1").setStyle(ButtonStyle.Primary))
@@ -375,6 +408,7 @@ class Game {
       let memberResponse = await interaction.followUp({
         content: "Which answer do you like?",
         components: [answerRow],
+        ephemeral: true
       });
 
       const collector = memberResponse.createMessageComponentCollector({
@@ -382,10 +416,11 @@ class Game {
       });
 
       collector.on('collect', async (interaction2) => {
+        interaction2.deferUpdate()
         if (!this.evalChoiceQuestions.has(region)) {
           this.evalChoiceQuestions.set(region, new Map())
         }
-        let answerMap = this.evalSpeedQuestions.get(region)
+        let answerMap = this.evalChoiceQuestions.get(region)
         answerMap.set(interaction2.user, interaction2.customId)
         this.evalChoiceQuestions.set(region, answerMap)
       });
