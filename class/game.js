@@ -41,7 +41,7 @@ class Game {
   defenseValue = 50
 
   bonusDefenseScores = new Map() //int.user -> score
-  currentScores = new Map() //int.user -> score
+  playerScores = new Map() //int.user -> score
 
 
   constructor (mapName, players) { //write iteslf to server
@@ -422,7 +422,15 @@ class Game {
     return unownedRegions
   }
 
+  getNonCapitalRegions () {
+    
+  }
+
   addAttackableRegionsToMenu () { //players without a region cannot attack capitals
+
+  }
+
+  getAttackableRegionsOfPlayers () {
 
   }
 
@@ -432,10 +440,6 @@ class Game {
       allRegions.push(new StringSelectMenuOptionBuilder().setLabel(name).setDescription(id).setValue(id))
     })
     return allRegions
-  }
-
-  getConquerableRegionsToSelect () {
-    //first border, if none then anywhere
   }
 
   async serveChoiceQuestion (players, region) {
@@ -528,12 +532,36 @@ class Game {
     this.bonusDefenseScores.set(player, currentValue)
   }
 
-  calculateScore () {
-
+  calculateScores () {
+    let currentScore = new Map()
+    this.regionOwners.forEach((owner, region) => { 
+      if (owner !== 0) {
+        if (!currentScore.has(owner)) {
+          currentScore.set(owner, 0)
+        }
+        let scoreOfOwner = currentScore.get(owner)
+        if (this.capitalLives.has(region)) {
+          scoreOfOwner += this.capitalScore
+          scoreOfOwner += this.capitalLives.get(owner) * this.capitalLiveScore
+        } else {
+          scoreOfOwner += this.regionScores(region)
+        }
+        this.currentScore.set(owner, scoreOfOwner)
+      }
+    })
+    this.bonusDefenseScores.forEach((value, player) => {
+      if (!currentScore.has(owner)) {
+        currentScore.set(owner, 0)
+      }
+      let scoreOfOwner = currentScore.get(owner)
+      scoreOfOwner += value
+      currentScore.set(player, scoreOfOwner)
+    })
+    this.playerScores = currentScore
   }
 
   getPlacements () {
-
+    this.calculateScores()
   }
 }
 
