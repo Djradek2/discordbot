@@ -1,5 +1,6 @@
 const xmljs = require("xml-js");
 const fs = require("pn/fs");
+const Helper = require("./utility/helper.js")
 const svg2png = require("svg2png");
 const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, ModalBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
@@ -12,6 +13,7 @@ class Game {
   regionNames = new Map() //id -> region name
   regionBorders = new Map() //id -> array of bordering regions
   regionScores = new Map() //id -> value (capitals are arbitrary 500)
+  capitalLives = new Map() //region -> int
   mapBuffer = null //based off map
   dataBuffer = null //based off map
   pngMap = null
@@ -22,6 +24,10 @@ class Game {
   conquestTimer = 15
   selectQTest = 15
   speedQTimer = 15
+  capitalExtraLives = 2
+  capitalScore = 500
+  capitalLiveScore = 150
+  regionScoreSetup = "weighted" //weighted or randomize or flat
 
   currentIntent = new Map() //interaction.user -> region_id
   currentChoiceAnswers = new Map()
@@ -30,12 +36,11 @@ class Game {
   evalSpeedQuestions = new Map()
   playerWonQuestion = new Map() //int.user -> bool  
 
-  currentConquerRound = 1
-  maxConquerRound = 3
   currentBattleRound = 1
   maxBattleRound = 3 //players * wanted 
-  
-  bonusDefenseScore = new Map() //int.user -> score
+  defenseValue = 50
+
+  bonusDefenseScores = new Map() //int.user -> score
   currentScores = new Map() //int.user -> score
 
 
@@ -61,6 +66,33 @@ class Game {
       }
       this.regionBorders.set(region.id._text, borderingRegions)
     })
+  }
+
+  setupRegionScores () {
+    if (this.regionScoreSetup === "weighted") {
+      let distribute = []
+      for (let i = 0; i < this.regionOwners.size; i++) {
+        let y = i
+        if (y >= 4) {
+          y = y % 4
+        }
+        distribute.push(100 + (y * 100))
+      }
+      distribute = Helper.shuffleArray(distribute)
+      let i = 0
+      this.regionOwners.forEach((owner, region) => {
+        this.regionScores.set(region, distribute[i])
+        i++
+      })
+    } else if (this.regionScoreSetup === "randomize") {
+      this.regionOwners.forEach((owner, region) => {
+        this.regionScores.set(region, Math.ceil(Math.random() * 4) * 100)
+      })
+    } else if (this.regionScoreSetup === "flat") {
+      this.regionOwners.forEach((owner, region) => {
+        this.regionScores.set(region, 200)
+      })
+    }
   }
 
   async updateVisualization () { //still needs to show capitals, and region numbers
@@ -101,6 +133,8 @@ class Game {
 
   async startSetup () {
     this.giveOutColorsIds()
+    this.setupRegionScores()
+    console.log(this.regionScores)
     const selectionRow = new ActionRowBuilder()
     const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select capital location!').addOptions(this.getAllRegionsToSelect());
     selectionRow.addComponents(selectTest)
@@ -171,6 +205,10 @@ class Game {
     }, this.conquestTimer * 1000)
   }
  
+  startBattleTurn () {
+
+  }
+
   handleSetupLosers () {
     this.playerWonQuestion.forEach((won, player) => {
       if(!won) {
@@ -180,7 +218,9 @@ class Game {
             openRegions.push(region)
           }
         })
-        this.setOwner(openRegions[Math.floor(Math.random() * openRegions.length)], player)
+        let randomRegion = Math.floor(Math.random() * openRegions.length)
+        this.setOwner(openRegions[randomRegion], player)
+        this.capitalLives.set(randomRegion, this.capitalExtraLives)
       }
     })
   }
@@ -212,6 +252,7 @@ class Game {
       } else {
         this.playerWonQuestion.set(contestants[0], true)
         this.setOwner(regionId, contestants[0])
+        this.capitalLives.set(regionId, this.capitalExtraLives)
       }
     });
     if (contestedBool) {
@@ -291,20 +332,24 @@ class Game {
     }
   }
 
-  startRound () {
-
-  }
-
   async endRound () {
+    if (this.gameState === "battle") {
+
+    }
     if (this.gameState === "conquer") {
       await this.updateVisualization()
-      this.sendMapToPlayers()
+      //this.sendMapToPlayers()
       this.cleanTemporaryVariables()
+      if (this.getUnownedRegions().size > 0) {
+        this.startConquerTurn()
+      } else {
+        this.gameState = "battle"
+        this.startBattleTurn()
+      }
     }
     if (this.gameState === "setup") {
       this.handleSetupLosers()
       await this.updateVisualization()
-      //this.sendMapToPlayers() //not necessary
       this.cleanTemporaryVariables()
       this.startConquerTurn()
       this.gameState = "conquer"
@@ -427,7 +472,7 @@ class Game {
     })
   }
 
-  async serveSpeedQuestion (players, region) { //this will only save the player answers (and their time of entry) and setup the correct 
+  async serveSpeedQuestion (players, region) {
     //get the actual question here
     this.currentSpeedAnswers.set(region, 10) //put in the proper answer
 
@@ -474,15 +519,20 @@ class Game {
     })
   }
 
+  incrementBonusScore (player) {
+    if (!this.bonusDefenseScores.has(player)) {
+      this.bonusDefenseScores.set(player, 0)
+    }
+    let currentValue = this.bonusDefenseScores
+    currentValue += this.defenseValue
+    this.bonusDefenseScores.set(player, currentValue)
+  }
+
   calculateScore () {
 
   }
 
   getPlacements () {
-
-  }
-
-  setAnswer (player, answer) { //you can move some of the serve question code here
 
   }
 }
