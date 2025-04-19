@@ -96,12 +96,26 @@ class Game {
   }
 
   async updateVisualization () { //still needs to show capitals, and region numbers
-    let visualBuffer = this.mapBuffer
+    let visualBuffer = structuredClone(this.mapBuffer)
     visualBuffer.svg.path.forEach((path) => {
       if (this.regionOwners.get(path._attributes.id) !== 0) {
         path._attributes.style = `fill: ${colors[this.playerColorIds.get(this.regionOwners.get(path._attributes.id))]}; stroke: rgb(0, 0, 0);`
       } else {
         path._attributes.style = `fill: ${colors[0]}; stroke: rgb(0, 0, 0);`
+      }
+    })
+    visualBuffer.svg.text.forEach((textfield) => {
+      if (this.capitalLives.has(textfield._attributes.region)) {
+        textfield._text = this.capitalScore + (this.capitalLives.get(textfield._attributes.region) * this.capitalLiveScore)
+      } else {
+        textfield._text = this.regionScores.get(textfield._attributes.region)
+      }
+    })
+    visualBuffer.svg.g.forEach((group) => {
+      if (this.capitalLives.get(group._attributes.name) === 1) {
+        group.g[1] = ""
+      } else if (this.capitalLives.get(group._attributes.name) === 0 || this.capitalLives.get(group._attributes.name) === undefined) {
+        group.g = []
       }
     })
     const updatedBuffer = xmljs.js2xml(visualBuffer, { compact: true, spaces: 2 })

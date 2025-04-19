@@ -1,0 +1,138 @@
+<map>
+  <region>
+    <id>1</id>
+    <name>Ustecky kraj</name>
+    <borders>
+      <border>6</border>
+      <border>12</border>
+      <border>10</border>
+      <border>4</border>
+    </borders>
+  </region>
+  <region>
+    <id>2</id>
+    <name>Jihocesky kraj</name>
+    <borders>
+      <border>10</border>
+      <border>12</border>
+      <border>13</border>
+      <border>3</border>
+    </borders>
+  </region>
+  <region>
+    <id>3</id>
+    <name>Jihomoravsky kraj</name>
+    <borders>
+      <border>2</border>
+      <border>13</border>
+      <border>9</border>
+      <border>8</border>
+      <border>14</border>
+    </borders>
+  </region>
+  <region>
+    <id>4</id>
+    <name>Karlovarsky kraj</name>
+    <borders>
+      <border>1</border>
+      <border>10</border>
+    </borders>
+  </region>
+  <region>
+    <id>5</id>
+    <name>Kralovehradecky kraj</name>
+    <borders>
+      <border>6</border>
+      <border>12</border>
+      <border>9</border>
+    </borders>
+  </region>
+  <region>
+    <id>6</id>
+    <name>Liberecky kraj</name>
+    <borders>
+      <border>1</border>
+      <border>12</border>
+      <border>5</border>
+    </borders>
+  </region>
+  <region>
+    <id>7</id>
+    <name>Moravskoslezsky kraj</name>
+    <borders>
+      <border>8</border>
+      <border>14</border>
+    </borders>
+  </region>
+  <region>
+    <id>8</id>
+    <name>Olomoucky kraj</name>
+    <borders>
+      <border>9</border>
+      <border>3</border>
+      <border>14</border>
+      <border>7</border>
+    </borders>
+  </region>
+  <region>
+    <id>9</id>
+    <name>Pardubicky kraj</name>
+    <borders>
+      <border>5</border>
+      <border>12</border>
+      <border>13</border>
+      <border>3</border>
+      <border>8</border>
+    </borders>
+  </region>
+  <region>
+    <id>10</id>
+    <name>Plzenský kraj</name>
+    <borders>
+      <border>4</border>
+      <border>1</border>
+      <border>12</border>
+      <border>2</border>
+    </borders>
+  </region>
+  <region>
+    <id>11</id>
+    <name>Praha</name>
+    <borders>
+      <border>12</border>
+    </borders>
+  </region>
+  <region>
+    <id>12</id>
+    <name>Stredocesky kraj</name>
+    <borders>
+      <border>10</border>
+      <border>1</border>
+      <border>6</border>
+      <border>5</border>
+      <border>9</border>
+      <border>13</border>
+      <border>2</border>
+      <border>11</border>
+    </borders>
+  </region>
+  <region>
+    <id>13</id>
+    <name>Kraj Vysocina</name>
+    <borders>
+      <border>12</border>
+      <border>9</border>
+      <border>3</border>
+      <border>2</border>
+    </borders>
+  </region>
+  <region>
+    <id>14</id>
+    <name>Zlinsky kraj</name>
+    <borders>
+      <border>3</border>
+      <border>8</border>
+      <border>7</border>
+    </borders>
+  </region>
+</map>

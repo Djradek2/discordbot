@@ -1,0 +1,28 @@
+<!-- holds region names and bordering region ids -->
+
+<map>
+  <region>
+    <id>1</id>
+    <name>Region 1</name>
+    <borders>
+      <border>2</border>
+      <border>3</border>
+    </borders>
+  </region>
+  <region>
+    <id>2</id>
+    <name>Region 2</name>
+    <borders>
+      <border>1</border>
+      <border>3</border>
+    </borders>
+  </region>
+  <region>
+    <id>3</id>
+    <name>Region 3</name>
+    <borders>
+      <border>1</border>
+      <border>2</border>
+    </borders>
+  </region>
+</map>
