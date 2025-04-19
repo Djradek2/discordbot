@@ -22,6 +22,7 @@ class Game {
 
   capitalTimer = 10 //<t:1743937140:R>
   conquestTimer = 15
+  battleTimer = 15
   selectQTest = 15
   speedQTimer = 15
   capitalExtraLives = 2
@@ -219,8 +220,49 @@ class Game {
     }, this.conquestTimer * 1000)
   }
  
-  startBattleTurn () {
+  async startBattleTurn (user) { //from player 1 - 8, player amount x battle rounds
+    interaction = this.players.get(user)
+    let rowsToSend = this.addAttackableRegionsToMenu()
+    await this.updateVisualization()
+    let memberResponse = await interaction.followUp({ //add capitalTimer
+      content: "Select region to attack, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.battleTimer) + ":R>",
+      components: [rowsToSend.get(user)],
+      files: [{ attachment: this.pngMap }],
+      ephemeral: true
+    })
+    const lobbyCollector = memberResponse.createMessageComponentCollector({
+      time: this.battleTimer * 1000,
+    });
+    lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+      interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+      this.players.set(interaction2.user, interaction2)
+      this.currentIntent.set(user, interaction2.values[0])
+    })
+    setTimeout(() => {
+      this.battleHandler()
+    }, this.battleTimer * 1000)
+  }
 
+  battleHandler () {
+    let targettedRegions = new Map() //player -> region
+    this.currentIntent.forEach((region, player) => {
+      if (!targettedRegions.has(region)) {
+        targettedRegions.set(region, [player])
+      } else {
+        let targettingPlayers = targettedRegions.get(region)
+        targettingPlayers.push(player)
+        targettedRegions.set(region, targettingPlayers)
+      }
+    })
+    targettedRegions.forEach((players, region) => {
+      if (this.gameState === "battle") {
+        players.push(this.regionOwners.get(region))
+      }
+      this.serveChoiceQuestion(players, region)
+    })
+    setTimeout(() => {
+      this.evaluateAnswers()
+    }, this.conquestTimer * 1000)
   }
 
   handleSetupLosers () {
@@ -307,13 +349,23 @@ class Game {
           }
         })
       })
-      this.setOwner(region, closestPlayer) //problem with capitals
+      if (this.regionOwners.get(region) !== closestPlayer) {
+        if (!this.capitalLives.has(region) || this.capitalLives.get(region) === 0) {
+          this.setOwner(region, closestPlayer)
+        } else {
+          let lives = this.capitalLives.get(region)
+          lives--
+          this.capitalLives.set(region, lives)
+        }
+      } else {
+        this.incrementBonusScore(closestPlayer)
+      }
     })
 
     let contestedWinners = new Map() 
     this.evalChoiceQuestions.forEach((answers, region) => {
       let playersCorrectAnswer = []
-      if(this.gameState === "conquer") {
+      if (this.gameState === "conquer") {
         answers.forEach((answer, player) => {
           if (answer === this.currentChoiceAnswers.get(region)) {
             playersCorrectAnswer.push(player)
@@ -323,7 +375,17 @@ class Game {
       if (playersCorrectAnswer.length > 1) {
         contestedWinners.set(region, playersCorrectAnswer)
       } else if (playersCorrectAnswer.length === 1) {
-        this.setOwner(region, playersCorrectAnswer[0])
+        if (this.regionOwners.get(region) !== playersCorrectAnswer[0]) {
+          if (!this.capitalLives.has(region) || this.capitalLives.get(region) === 0) {
+            this.setOwner(region, playersCorrectAnswer[0])
+          } else {
+            let lives = this.capitalLives.get(region)
+            lives--
+            this.capitalLives.set(region, lives)
+          }
+        } else {
+          this.incrementBonusScore(playersCorrectAnswer[0])
+        }
       }
     })
 
@@ -344,15 +406,29 @@ class Game {
         }, this.conquestTimer * 1000)
       }
     }
+    if (this.gameState === "battle") {
+      if (contestedWinners.size === 0) {
+        this.endRound()
+      } else {
+        this.clearAnswers()
+        contestedWinners.forEach((players, region) => {
+          this.serveSpeedQuestion(players, region)
+        })
+        setTimeout(() => {
+          this.evaluateAnswers()
+        }, this.conquestTimer * 1000)
+      }
+    }
   }
 
   async endRound () {
     if (this.gameState === "battle") {
-
+      await this.updateVisualization()
+      this.sendMapToPlayers()
+      this.cleanTemporaryVariables()
     }
     if (this.gameState === "conquer") {
       await this.updateVisualization()
-      //this.sendMapToPlayers()
       this.cleanTemporaryVariables()
       if (this.getUnownedRegions().size > 0) {
         this.startConquerTurn()
@@ -437,15 +513,54 @@ class Game {
   }
 
   getNonCapitalRegions () {
-    
+    let noncapitalRegions = new Set()
+    this.regionOwners.forEach((owner, region) => {
+      if (!this.capitalLives.has(region)) {
+        noncapitalRegions.add(region)
+      }
+    })
+    return noncapitalRegions
   }
 
   addAttackableRegionsToMenu () { //players without a region cannot attack capitals
-
+    let playerAttackableRegions = this.getAttackableRegionsOfPlayers()
+    let playerAttackRows = new Map()
+    
+    playerAttackableRegions.forEach((regions, player) => {
+      let selectionRow = new ActionRowBuilder()
+      let selectAttack = new StringSelectMenuBuilder().setCustomId('conquerLocation').setPlaceholder('Select region to conquer!')
+      regions.forEach((region) => {
+        selectAttack.addOptions(new StringSelectMenuOptionBuilder().setLabel(this.regionNames.get(region)).setDescription(region).setValue(region))
+      })
+      selectionRow.addComponents(selectConquer)
+      playerAttackRows.set(player, selectionRow)
+    })
+    return playerAttackRows
   }
 
   getAttackableRegionsOfPlayers () {
-
+    let attackableRegions = new Map()
+    this.regionOwners.forEach((owner, region) => {
+      if (owner !== 0) {
+        if (!attackableRegions.has(owner)) {
+          attackableRegions.set(owner, new Set())
+        }
+        let borderSet = attackableRegions.get(owner)
+        let borderIds = this.regionBorders.get(region)
+        borderIds.forEach((borderingId) => {
+          if (this.regionOwners.get(borderingId) !== owner) {
+            borderSet.add(borderingId)
+          }
+        })
+        attackableRegions.set(owner, borderSet)
+      }
+    })
+    attackableRegions.forEach((borderingIds, player) => {
+      if (borderingIds.size === 0) {
+        attackableRegions.set(player, this.getNonCapitalRegions())
+      }
+    })
+    return attackableRegions
   }
 
   getAllRegionsToSelect () {
@@ -456,7 +571,7 @@ class Game {
     return allRegions
   }
 
-  async serveChoiceQuestion (players, region) {
+  async serveChoiceQuestion (players, region) { //players is []
     this.currentChoiceAnswers.set(region, "answer2")
 
     const answerRow = new ActionRowBuilder()
