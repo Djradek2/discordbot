@@ -333,6 +333,7 @@ class Game {
   }
 
   async evaluateAnswers () {
+    let capitalFightInProgress = false
     this.evalSpeedQuestions.forEach((answers, region) => {
       let playerCloseness = [] //array of maps
       let closestPlayer = null
@@ -368,24 +369,22 @@ class Game {
           let lives = this.capitalLives.get(region)
           lives--
           this.capitalLives.set(region, lives)
+          capitalFightInProgress = true
           this.battleHandler()
-          return
         }
       } else {
         this.incrementBonusScore(closestPlayer)
       }
     })
 
-    let contestedWinners = new Map() 
+    let contestedWinners = new Map()  
     this.evalChoiceQuestions.forEach((answers, region) => {
       let playersCorrectAnswer = []
-      if (this.gameState === "conquer") {
-        answers.forEach((answer, player) => {
-          if (answer === this.currentChoiceAnswers.get(region)) {
-            playersCorrectAnswer.push(player)
-          }
-        })
-      }
+      answers.forEach((answer, player) => {
+        if (answer === this.currentChoiceAnswers.get(region)) {
+          playersCorrectAnswer.push(player)
+        }
+      })
       if (playersCorrectAnswer.length > 1) {
         contestedWinners.set(region, playersCorrectAnswer) //this will go to a speed question
       } else if (playersCorrectAnswer.length === 1) { //if only one has it correctly
@@ -396,8 +395,8 @@ class Game {
             let lives = this.capitalLives.get(region)
             lives--
             this.capitalLives.set(region, lives)
+            capitalFightInProgress = true
             this.battleHandler()
-            return
           }
         } else {
           this.incrementBonusScore(playersCorrectAnswer[0])
@@ -422,7 +421,7 @@ class Game {
         }, this.conquestTimer * 1000)
       }
     }
-    if (this.gameState === "battle") {
+    if (this.gameState === "battle" && !capitalFightInProgress) {
       if (contestedWinners.size === 0) {
         this.endRound()
       } else {
