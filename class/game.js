@@ -9,6 +9,7 @@ let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "
 class Game {
   players = null //interaction.user -> interaction
   playerColorIds = new Map() //interaction.user -> 1-8 
+  playersById = new Map //1-8 -> interaction.user
   regionOwners = new Map() //regionId -> interaction.user
   regionNames = new Map() //id -> region name
   regionBorders = new Map() //id -> array of bordering regions
@@ -37,6 +38,7 @@ class Game {
   evalSpeedQuestions = new Map()
   playerWonQuestion = new Map() //int.user -> bool  
 
+  currentBattlePlayer = 1
   currentBattleRound = 1
   maxBattleRound = 3 //players * wanted 
   defenseValue = 50
@@ -138,18 +140,18 @@ class Game {
     this.regionOwners.set(String(regionId), playerId)
   }
 
-  giveOutColorsIds () {
+  giveOutIds () {
     let increment = 1
     this.players.forEach((interaction, player) => {
       this.playerColorIds.set(player, increment)
+      this.playersById.set(increment, player)
       increment++
     })
   }
 
   async startSetup () {
-    this.giveOutColorsIds()
+    this.giveOutIds()
     this.setupRegionScores()
-    console.log(this.regionScores)
     const selectionRow = new ActionRowBuilder()
     const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select capital location!').addOptions(this.getAllRegionsToSelect());
     selectionRow.addComponents(selectTest)
@@ -219,9 +221,19 @@ class Game {
       this.evaluateAnswers()
     }, this.conquestTimer * 1000)
   }
+
+  switchBattlePlayer () {
+    if (this.currentBattlePlayer < this.players.size) {
+      this.currentBattlePlayer++
+    } else {
+      this.currentBattlePlayer = 1
+      this.currentBattleRound++
+    }
+  }
  
-  async startBattleTurn (user) { //from player 1 - 8, player amount x battle rounds
-    interaction = this.players.get(user)
+  async startBattleTurn () { //from player 1 - 8, player amount x battle rounds
+    let user = this.playersById.get(this.currentBattlePlayer)
+    let interaction = this.players.get(user)
     let rowsToSend = this.addAttackableRegionsToMenu()
     await this.updateVisualization()
     let memberResponse = await interaction.followUp({ //add capitalTimer
@@ -356,6 +368,8 @@ class Game {
           let lives = this.capitalLives.get(region)
           lives--
           this.capitalLives.set(region, lives)
+          this.battleHandler()
+          return
         }
       } else {
         this.incrementBonusScore(closestPlayer)
@@ -373,15 +387,17 @@ class Game {
         })
       }
       if (playersCorrectAnswer.length > 1) {
-        contestedWinners.set(region, playersCorrectAnswer)
-      } else if (playersCorrectAnswer.length === 1) {
-        if (this.regionOwners.get(region) !== playersCorrectAnswer[0]) {
-          if (!this.capitalLives.has(region) || this.capitalLives.get(region) === 0) {
+        contestedWinners.set(region, playersCorrectAnswer) //this will go to a speed question
+      } else if (playersCorrectAnswer.length === 1) { //if only one has it correctly
+        if (this.regionOwners.get(region) !== playersCorrectAnswer[0]) { //and its not the owner
+          if (!this.capitalLives.has(region) || this.capitalLives.get(region) === 0) { // if isnt a capital (normal territory owned by anyone, including neutral)
             this.setOwner(region, playersCorrectAnswer[0])
-          } else {
+          } else { //if it's a capital (implied battle phase, but not every battle phase)
             let lives = this.capitalLives.get(region)
             lives--
             this.capitalLives.set(region, lives)
+            this.battleHandler()
+            return
           }
         } else {
           this.incrementBonusScore(playersCorrectAnswer[0])
@@ -423,15 +439,19 @@ class Game {
 
   async endRound () {
     if (this.gameState === "battle") {
+      this.switchBattlePlayer()
       await this.updateVisualization()
       this.sendMapToPlayers()
       this.cleanTemporaryVariables()
+      this.startBattleTurn()
     }
     if (this.gameState === "conquer") {
       await this.updateVisualization()
       this.cleanTemporaryVariables()
       if (this.getUnownedRegions().size > 0) {
-        this.startConquerTurn()
+        this.gameState = "battle" //temporary testing thingy
+        this.startBattleTurn() //temporary testing thingy
+        //this.startConquerTurn()
       } else {
         this.gameState = "battle"
         this.startBattleTurn()
@@ -532,7 +552,7 @@ class Game {
       regions.forEach((region) => {
         selectAttack.addOptions(new StringSelectMenuOptionBuilder().setLabel(this.regionNames.get(region)).setDescription(region).setValue(region))
       })
-      selectionRow.addComponents(selectConquer)
+      selectionRow.addComponents(selectAttack)
       playerAttackRows.set(player, selectionRow)
     })
     return playerAttackRows
