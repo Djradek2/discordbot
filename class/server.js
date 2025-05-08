@@ -28,6 +28,10 @@ class Server {
   loadMaps () {
     
   }
+
+  serveQuestionsToGame (desiredSets) { 
+
+  }
 }
 
 module.exports = {

@@ -5,6 +5,7 @@ const svg2png = require("svg2png");
 const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, ModalBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "#ff01f5", "#7f7f7f", "#fec80e"]
+let negativeColors = ["#000000", "#ffffff", "#ffffff", "#ffffff", "#000000", "#000000", "#ffffff", "#ffffff", "#000000"] //should be white or black to negate the background
 
 class Game {
   players = null //interaction.user -> interaction
@@ -21,14 +22,17 @@ class Game {
   gameState = "setup" //setup, conquer, battle, finish
   turnState = "1" //if at choice or speed question state of the round
 
-  capitalTimer = 10 //<t:1743937140:R>
+  capitalTimer = 10
   conquestTimer = 15
   battleTimer = 15
   selectQTest = 15
   speedQTimer = 15
-  capitalExtraLives = 2
+  questionSets = []
+  maxBattleRound = 3 //each player this many times
   capitalScore = 500
+  capitalExtraLives = 2
   capitalLiveScore = 150
+  defenseValue = 50
   regionScoreSetup = "weighted" //weighted or randomize or flat
 
   currentIntent = new Map() //interaction.user -> region_id
@@ -36,15 +40,13 @@ class Game {
   currentSpeedAnswers = new Map() //region -> correctAnswer
   evalChoiceQuestions = new Map() //region_id -> {int.user -> answer}
   evalSpeedQuestions = new Map()
-  playerWonQuestion = new Map() //int.user -> bool  
+  playerWonQuestion = new Map() //inter.user -> bool  
 
   currentBattlePlayer = 1
   currentBattleRound = 1
-  maxBattleRound = 3 //players * wanted 
-  defenseValue = 50
 
-  bonusDefenseScores = new Map() //int.user -> score
-  playerScores = new Map() //int.user -> score
+  bonusDefenseScores = new Map() //inter.user -> score
+  playerScores = new Map() //inter.user -> score
 
 
   constructor (mapName, players) { //write iteslf to server
@@ -98,7 +100,8 @@ class Game {
     }
   }
 
-  async updateVisualization () { //still needs to show capitals, and region numbers
+  async updateVisualization () { //still needs to show region numbers
+    this.calculateScores()
     let visualBuffer = structuredClone(this.mapBuffer)
     visualBuffer.svg.path.forEach((path) => {
       if (this.regionOwners.get(path._attributes.id) !== 0) {
@@ -107,11 +110,19 @@ class Game {
         path._attributes.style = `fill: ${colors[0]}; stroke: rgb(0, 0, 0);`
       }
     })
+    let playerIterator = 1;
     visualBuffer.svg.text.forEach((textfield) => {
-      if (this.capitalLives.has(textfield._attributes.region)) {
-        textfield._text = this.capitalScore + (this.capitalLives.get(textfield._attributes.region) * this.capitalLiveScore)
+      if (textfield._attributes.region != null) {
+        if (this.capitalLives.has(textfield._attributes.region)) {
+          textfield._text = textfield._attributes.region + "-" + (parseInt(this.capitalScore) + parseInt(this.capitalLives.get(textfield._attributes.region) * this.capitalLiveScore))
+        } else {
+          textfield._text = textfield._attributes.region + "-" + this.regionScores.get(textfield._attributes.region)
+        }
       } else {
-        textfield._text = this.regionScores.get(textfield._attributes.region)
+        if (playersById.get(playerIterator)) {
+          textfield._text = this.playersById.get(playerIterator).username.substring(0, 11) + " - " + this.playerScores.get(playersById.get(playerIterator)) // player username (up to 11 letters) and "- score"
+        }
+        playerIterator++
       }
     })
     visualBuffer.svg.g.forEach((group) => {
