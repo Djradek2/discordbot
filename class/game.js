@@ -568,7 +568,7 @@ class Game {
     return playerAttackRows
   }
 
-  getAttackableRegionsOfPlayers () { // ISSUE: doesnt handle players without region properly, make attackable regions take all existing players first
+  getAttackableRegionsOfPlayers () {
     let attackableRegions = new Map()
     this.playersById.forEach((player) => {
       attackableRegions.set(player, new Set())
@@ -708,7 +708,6 @@ class Game {
         currentScore.set(owner, scoreOfOwner)
       }
     })
-    console.log(currentScore)
     this.bonusDefenseScores.forEach((value, player) => {
       let scoreOfOwner = currentScore.get(owner)
       scoreOfOwner += value
