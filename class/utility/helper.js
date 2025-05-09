@@ -14,10 +14,6 @@ function shuffleArray (array) {
   return array;
 }
 
-function maxCharacters (stringToTrim, max) {
-
-}
-
 module.exports = {
   generateId16,
   shuffleArray

@@ -119,8 +119,8 @@ class Game {
           textfield._text = textfield._attributes.region + "-" + this.regionScores.get(textfield._attributes.region)
         }
       } else {
-        if (playersById.get(playerIterator)) {
-          textfield._text = this.playersById.get(playerIterator).username.substring(0, 11) + " - " + this.playerScores.get(playersById.get(playerIterator)) // player username (up to 11 letters) and "- score"
+        if (this.playersById.get(playerIterator)) {
+          textfield._text = this.playersById.get(playerIterator).username.substring(0, 11) + " - " + this.playerScores.get(this.playersById.get(playerIterator)) // player username (up to 11 letters) and "- score"
         }
         playerIterator++
       }
@@ -568,13 +568,13 @@ class Game {
     return playerAttackRows
   }
 
-  getAttackableRegionsOfPlayers () {
+  getAttackableRegionsOfPlayers () { // ISSUE: doesnt handle players without region properly, make attackable regions take all existing players first
     let attackableRegions = new Map()
+    this.playersById.forEach((player) => {
+      attackableRegions.set(player, new Set())
+    })
     this.regionOwners.forEach((owner, region) => {
       if (owner !== 0) {
-        if (!attackableRegions.has(owner)) {
-          attackableRegions.set(owner, new Set())
-        }
         let borderSet = attackableRegions.get(owner)
         let borderIds = this.regionBorders.get(region)
         borderIds.forEach((borderingId) => {
@@ -693,25 +693,23 @@ class Game {
 
   calculateScores () {
     let currentScore = new Map()
+    this.playersById.forEach((player) => {
+      currentScore.set(player, 0)
+    })
     this.regionOwners.forEach((owner, region) => { 
       if (owner !== 0) {
-        if (!currentScore.has(owner)) {
-          currentScore.set(owner, 0)
-        }
         let scoreOfOwner = currentScore.get(owner)
         if (this.capitalLives.has(region)) {
           scoreOfOwner += this.capitalScore
-          scoreOfOwner += this.capitalLives.get(owner) * this.capitalLiveScore
+          scoreOfOwner += this.capitalLives.get(region) * this.capitalLiveScore
         } else {
-          scoreOfOwner += this.regionScores(region)
+          scoreOfOwner += this.regionScores.get(region)
         }
-        this.currentScore.set(owner, scoreOfOwner)
+        currentScore.set(owner, scoreOfOwner)
       }
     })
+    console.log(currentScore)
     this.bonusDefenseScores.forEach((value, player) => {
-      if (!currentScore.has(owner)) {
-        currentScore.set(owner, 0)
-      }
       let scoreOfOwner = currentScore.get(owner)
       scoreOfOwner += value
       currentScore.set(player, scoreOfOwner)
