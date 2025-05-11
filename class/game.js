@@ -9,6 +9,7 @@ let negativeColors = ["#000000", "#ffffff", "#ffffff", "#ffffff", "#000000", "#0
 
 class Game {
   players = null //interaction.user -> interaction
+  playerDisabled = new Map() //interaction.user -> boolean
   playerColorIds = new Map() //interaction.user -> 1-8 
   playersById = new Map //1-8 -> interaction.user
   regionOwners = new Map() //regionId -> interaction.user
@@ -156,6 +157,7 @@ class Game {
     this.players.forEach((interaction, player) => {
       this.playerColorIds.set(player, increment)
       this.playersById.set(increment, player)
+      this.playerDisabled.set(player, false)
       increment++
     })
   }
@@ -714,6 +716,10 @@ class Game {
       currentScore.set(player, scoreOfOwner)
     })
     this.playerScores = currentScore
+  }
+
+  disablePlayer (interaction) {
+    this.playerDisabled.set(interaction.user, true)
   }
 
   getPlacements () {

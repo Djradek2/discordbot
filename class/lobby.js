@@ -14,15 +14,25 @@ class Lobby {
     server.addLobby(this)
   }
 
-  joinGame (player) {
+  joinGame (interaction) {
     if(this.players.size < 8){
-      this.players.set(player.user, player)
+      this.players.set(interaction.user, interaction)
+      this.server.clearPlayerFromOldGame(interaction)
+      this.server.playerTracker.set(interaction.user, this)
     }
   }
 
+  removePlayer (interaction) {
+    this.players.delete(interaction.user)
+  }
+
   startGame () {
-    //create game and write it to server and remove the lobby
-    this.server.currentGames.set(Helper.generateId16(), new game.Game("cz", this.players))
+    let gameInstance = new game.Game("cz", this.players) // "cz" = map
+    this.server.currentGames.set(Helper.generateId16(), gameInstance)
+    this.players.forEach((interaction, player) => {
+      this.server.clearPlayerFromOldGame(interaction)
+      this.server.playerTracker.set(player, gameInstance)
+    });
     this.closeLobby()
   }
 
