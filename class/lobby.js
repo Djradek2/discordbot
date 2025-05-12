@@ -27,7 +27,7 @@ class Lobby {
   }
 
   startGame () {
-    let gameInstance = new game.Game("cz", this.players) // "cz" = map
+    let gameInstance = new game.Game("cz", this.players, this.lobbyCode) // "cz" = map
     this.server.currentGames.set(Helper.generateId16(), gameInstance)
     this.players.forEach((interaction, player) => {
       this.server.clearPlayerFromOldGame(interaction)

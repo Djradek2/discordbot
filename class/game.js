@@ -8,6 +8,7 @@ let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "
 let negativeColors = ["#000000", "#ffffff", "#ffffff", "#ffffff", "#000000", "#000000", "#ffffff", "#ffffff", "#000000"] //should be white or black to negate the background
 
 class Game {
+  gameId = ""
   players = null //interaction.user -> interaction
   playerDisabled = new Map() //interaction.user -> boolean
   playerColorIds = new Map() //interaction.user -> 1-8 
@@ -20,6 +21,7 @@ class Game {
   mapBuffer = null //based off map
   dataBuffer = null //based off map
   pngMap = null
+  gameInfo = [] //strings that get sent in a single message whenever something happens
   gameState = "setup" //setup, conquer, battle, finish
   turnState = "1" //if at choice or speed question state of the round
 
@@ -50,7 +52,8 @@ class Game {
   playerScores = new Map() //inter.user -> score
 
 
-  constructor (mapName, players) { //write iteslf to server
+  constructor (mapName, players, gameId) { //write iteslf to server
+    this.gameId = gameId
     this.players = players
     this.mapBuffer = xmljs.xml2js(fs.readFileSync("./maps/" + mapName + ".svg", "utf8"), { compact: true }) //this should actually already be loaded on server start and just be passed to the buffer
     this.dataBuffer = xmljs.xml2js(fs.readFileSync("./maps/" + mapName + ".xml", "utf8"), { compact: true })
@@ -148,7 +151,8 @@ class Game {
   }
 
   setOwner (regionId, playerId) {
-    console.log(playerId.username + " became owner of " + regionId)
+    //console.log(playerId.username + " became owner of " + regionId)
+    this.gameInfo.push(playerId.username + " became owner of " + regionId)
     this.regionOwners.set(String(regionId), playerId)
   }
 
@@ -217,6 +221,7 @@ class Game {
   }
 
   conquerHandler () {
+    this.distributeInfo() //player targets
     let targettedRegions = new Map()
     this.currentIntent.forEach((region, player) => {
       if (!targettedRegions.has(region)) {
@@ -450,8 +455,13 @@ class Game {
   }
 
   async endRound () {
+    this.distributeInfo()
     if (this.gameState === "battle") {
       this.switchBattlePlayer()
+      if (this.currentBattleRound > this.maxBattleRound) {
+        this.finalizeGame()
+        return
+      }
       await this.updateVisualization()
       this.sendMapToPlayers()
       this.cleanTemporaryVariables()
@@ -718,12 +728,46 @@ class Game {
     this.playerScores = currentScore
   }
 
+  distributeInfo () { //will send out this.gameInfo to all nondisabled players and clear it  
+    //notable info: someone leaves, every intent, passed turns, question given to current contestants, results of everyone answering, change of territory
+    let messageToSend = ""
+    this.gameInfo.forEach((entry) => {
+      messageToSend += entry + "\n"
+    })
+    if (messageToSend !== "") {
+      this.players.forEach((interaction, player) => {
+        if (this.playerDisabled.get(player) !== true) {
+          interaction.followUp({
+            content: messageToSend,
+            ephemeral: true
+          })
+        }
+      })
+    }
+    this.gameInfo = []
+  }
+
   disablePlayer (interaction) {
     this.playerDisabled.set(interaction.user, true)
   }
 
-  getPlacements () {
+  sendFinalPlacements () { //TODO
     this.calculateScores()
+    let placementMessage = ""
+    this.players.forEach((interaction, player) => {
+      if (this.playerDisabled.get(player) !== true) {
+        interaction.followUp({
+          content: "TODO",
+          ephemeral: true
+        })
+      }
+    })
+  }
+
+  finalizeGame () { // TODO
+    this.sendFinalPlacements()
+    //record results to db
+    this.server.currentGames.delete(this.gameId)
   }
 }
 

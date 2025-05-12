@@ -119,33 +119,33 @@ async function setupServer () {
     }
   });
   
-  client.on('messageCreate', async (message) => {
-    if(!message?.author.bot){
-      let imageBuffer = await fs.readFile("test.svg").then(svg2png)
-      let memberResponse = await message.author.send({
-        content: res['rows'][0]['question_text'],
-        components: [testRow],
-        files: [{ attachment: imageBuffer }]
-      });
+  // client.on('messageCreate', async (message) => {
+  //   if(!message?.author.bot){
+  //     let imageBuffer = await fs.readFile("test.svg").then(svg2png)
+  //     let memberResponse = await message.author.send({
+  //       content: res['rows'][0]['question_text'],
+  //       components: [testRow],
+  //       files: [{ attachment: imageBuffer }]
+  //     });
   
-      const collector = memberResponse.createMessageComponentCollector({
-        time: 60000,
-      });
+  //     const collector = memberResponse.createMessageComponentCollector({
+  //       time: 60000,
+  //     });
     
-      collector.on('collect', async (interaction) => {
-        if (!interaction.isButton()) {
-          return;
-        }
-        if (interaction.user.id !== message.author.id) {
-          return interaction.reply({ content: "You can't interact with this button!", ephemeral: true });
-        }
-        if (interaction.customId === 'test1') {
-          await interaction.reply({ content: 'Correct!'});
-        } else {
-          await interaction.reply({ content: 'You dumb af!'});
-        }
-      });
-    }
-  })
+  //     collector.on('collect', async (interaction) => {
+  //       if (!interaction.isButton()) {
+  //         return;
+  //       }
+  //       if (interaction.user.id !== message.author.id) {
+  //         return interaction.reply({ content: "You can't interact with this button!", ephemeral: true });
+  //       }
+  //       if (interaction.customId === 'test1') {
+  //         await interaction.reply({ content: 'Correct!'});
+  //       } else {
+  //         await interaction.reply({ content: 'You dumb af!'});
+  //       }
+  //     });
+  //   }
+  // })
   
 }
