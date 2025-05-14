@@ -31,7 +31,7 @@ class Server {
   attemptJoinLobby (id, player) { //id, interaction
     if (this.openLobbies.has(id)) { //success
       this.openLobbies.get(id).joinGame(player)
-      console.log('user ' + player.user.username + " sucessfully joined lobby " + id)
+      console.log('user ' + player.user.username + " succesfully joined lobby " + id)
     }
   }
 

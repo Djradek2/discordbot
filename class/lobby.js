@@ -16,8 +16,8 @@ class Lobby {
 
   joinGame (interaction) {
     if(this.players.size < 8){
-      this.players.set(interaction.user, interaction)
       this.server.clearPlayerFromOldGame(interaction)
+      this.players.set(interaction.user, interaction)
       this.server.playerTracker.set(interaction.user, this)
     }
   }
@@ -27,10 +27,10 @@ class Lobby {
   }
 
   startGame () {
-    let gameInstance = new game.Game("cz", this.players, this.lobbyCode) // "cz" = map
+    let gameInstance = new game.Game("cz", this.players, this.lobbyCode, this.server) // "cz" = map
     this.server.currentGames.set(Helper.generateId16(), gameInstance)
     this.players.forEach((interaction, player) => {
-      this.server.clearPlayerFromOldGame(interaction)
+      //this.server.clearPlayerFromOldGame(interaction)
       this.server.playerTracker.set(player, gameInstance)
     });
     this.closeLobby()
