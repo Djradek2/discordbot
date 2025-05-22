@@ -2,8 +2,8 @@ const xmljs = require("xml-js");
 const fs = require("pn/fs");
 const Helper = require("./utility/helper.js")
 const svg2png = require("svg2png");
-const ChoiceQ = require("./question/choiceQuestion.js")
-const SpeedQ = require("./question/speedQuestion.js")
+const { ChoiceQuestion } = require("./question/choiceQuestion.js")
+const { SpeedQuestion } = require("./question/speedQuestion.js")
 const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, ModalBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "#ff01f5", "#7f7f7f", "#fec80e"]
@@ -48,8 +48,8 @@ class Game {
   evalSpeedQuestions = new Map()
   playerWonQuestion = new Map() //inter.user -> bool  
 
-  sendableChoiceQ = new ChoiceQ.ChoiceQuestion()
-  sendableSpeedQ = new SpeedQ.SpeedQuestion()
+  sendableChoiceQ = new ChoiceQuestion()
+  sendableSpeedQ = new SpeedQuestion()
 
   currentBattlePlayer = 1
   currentBattleRound = 1

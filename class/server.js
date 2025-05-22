@@ -1,6 +1,8 @@
 const { Game } = require("./game")
 const { Lobby } = require("./lobby")
 const { Client } = require('pg');
+const { ChoiceQuestion } = require("./question/choiceQuestion.js")
+const { SpeedQuestion } = require("./question/speedQuestion.js")
 const dotenv = require('dotenv');
 
 class Server {
@@ -62,9 +64,34 @@ class Server {
     
   }
 
-  async loadQuestions () { //TODO
-    let res1 = await client.query('SELECT * FROM approximateQuestions');
-    let res2 = await client.query('SELECT * FROM speedQuestions');
+  async loadQuestions () {
+    let [speedQsData, choiceQsData] = await Promise.all([client.query('SELECT * FROM approximateQuestions'), client.query('SELECT * FROM exactQuestions')])
+    let choiceQsets = new Map()
+    let speedQsets = new Map()
+
+    speedQsData.forEach(row => {
+      if (row.status === 1) {
+        if (!speedQsets.has(row.set_id)) {
+          speedQsets.set(row.set_id, [])
+        }
+        let speedQ = new SpeedQuestion(row.id, row.set_id, row.question_text, row.correct)
+        let placeToPush = speedQsets.get(row.set_id)
+        placeToPush.push(speedQ)
+        speedQsets.set(row.set_id, placeToPush)
+      }
+    });
+
+    choiceQsData.forEach(row => {
+      if (row.status === 1) {
+        if (!choiceQsets.has(row.set_id)) {
+          choiceQsets.set(row.set_id, [])
+        }
+        let choiceQ = new ChoiceQuestion(row.id, row.set_id, row.question_text, row.correct, row.option1, row.option2, row.option3)
+        let placeToPush = choiceQsets.get(row.set_id)
+        placeToPush.push(choiceQ)
+        choiceQsets.set(row.set_id, placeToPush)
+      }
+    });
   }
 
   serveQuestionsToGame (desiredSets) { 
