@@ -32,7 +32,9 @@ class Server {
     if (this.openLobbies.has(id)) { //success
       this.openLobbies.get(id).joinGame(player)
       console.log('user ' + player.user.username + " succesfully joined lobby " + id)
+      return true
     }
+    return false
   }
 
   loadServerQuestions () {

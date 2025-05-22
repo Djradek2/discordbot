@@ -1,6 +1,6 @@
 function generateId16 () {
   lobbyCode = ""
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++) { //change to 16
     lobbyCode += Math.floor(Math.random() * 10)
   }
   return lobbyCode

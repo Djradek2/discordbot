@@ -57,7 +57,19 @@ module.exports = {
         })
         if (modalCollector) {
           if (modalCollector.fields.fields.get('lobbycode').value) {
-            server.attemptJoinLobby(modalCollector.fields.fields.get('lobbycode').value, interaction2)
+            let connected = server.attemptJoinLobby(modalCollector.fields.fields.get('lobbycode').value, interaction2)
+            if (connected) {
+              interaction2.followUp({
+                content: "Successfully joined lobby!",
+                ephemeral: true,
+              })
+            } else if (!connected) {
+              interaction2.followUp({
+                content: "Lobby does not exist!",
+                ephemeral: true,
+              })
+            }
+            modalCollector.deferReply({ ephemeral: true })
           }
         }
         // let memberResponse2 = await interaction.followUp({

@@ -67,7 +67,7 @@
       <rect x="27.87" y="15.57" width="42" height="70.17" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
     </g>
   </g>
-  <text region="4" name="Karlovarsky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="135" y="220" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
+  <text region="4" name="Karlovarsky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="135" y="230" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
   <g id="304" name="4" transform="translate(60, 140)">
     <g id="104" x="0" y="0" transform="scale(0.12), translate(350, 370)">
       <rect x="28.35" y="136.87" width="56.69" height="226.77" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
@@ -80,7 +80,7 @@
       <rect x="27.87" y="15.57" width="42" height="70.17" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
     </g>
   </g>
-  <text region="5" name="Kralovehradecky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="540" y="180" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
+  <text region="5" name="Kralovehradecky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="530" y="150" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
   <g id="305" name="5" transform="translate(465, 105)">
     <g id="105" x="0" y="0" transform="scale(0.12), translate(350, 370)">
       <rect x="28.35" y="136.87" width="56.69" height="226.77" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
@@ -119,8 +119,8 @@
       <rect x="27.87" y="15.57" width="42" height="70.17" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
     </g>
   </g>
-  <text region="8" name="Olomoucky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="725" y="330" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
-  <g id="308" name="8" transform="translate(725, 260)">
+  <text region="8" name="Olomoucky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="710" y="340" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
+  <g id="308" name="8" transform="translate(650, 185)">
     <g id="108" x="0" y="0" transform="scale(0.12), translate(350, 370)">
       <rect x="28.35" y="136.87" width="56.69" height="226.77" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
       <path d="M5.98,80.18H107.4c3.3,0,5.98,2.68,5.98,5.98v17.54c0,18.31-14.86,33.17-33.17,33.17H33.17C14.86,136.87,0,122.01,0,103.7v-17.54c0-3.3,2.68-5.98,5.98-5.98Z" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
@@ -145,8 +145,8 @@
       <rect x="27.87" y="15.57" width="42" height="70.17" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
     </g>
   </g>
-  <text region="10" name="Plzenský kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="190" y="340" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
-  <g id="310" name="10" transform="translate(180, 300)">
+  <text region="10" name="Plzenský kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="165" y="335" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
+  <g id="310" name="10" transform="translate(180, 305)">
     <g id="110" x="0" y="0" transform="scale(0.12), translate(350, 370)">
       <rect x="28.35" y="136.87" width="56.69" height="226.77" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
       <path d="M5.98,80.18H107.4c3.3,0,5.98,2.68,5.98,5.98v17.54c0,18.31-14.86,33.17-33.17,33.17H33.17C14.86,136.87,0,122.01,0,103.7v-17.54c0-3.3,2.68-5.98,5.98-5.98Z" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
@@ -171,7 +171,7 @@
       <rect x="27.87" y="15.57" width="42" height="70.17" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
     </g>
   </g>
-  <text region="12" name="Stredocesky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="430" y="275" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
+  <text region="12" name="Stredocesky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="385" y="300" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
   <g id="312" name="12" transform="translate(380, 125)">
     <g id="112" x="0" y="0" transform="scale(0.12), translate(350, 370)">
       <rect x="28.35" y="136.87" width="56.69" height="226.77" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
@@ -184,8 +184,8 @@
       <rect x="27.87" y="15.57" width="42" height="70.17" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
     </g>
   </g>
-  <text region="13" name="Kraj Vysocina" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="520" y="375" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
-  <g id="313" name="13" transform="translate(520, 325)">
+  <text region="13" name="Kraj Vysocina" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="500" y="365" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
+  <g id="313" name="13" transform="translate(510, 340)">
     <g id="113" x="0" y="0" transform="scale(0.12), translate(350, 370)">
       <rect x="28.35" y="136.87" width="56.69" height="226.77" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
       <path d="M5.98,80.18H107.4c3.3,0,5.98,2.68,5.98,5.98v17.54c0,18.31-14.86,33.17-33.17,33.17H33.17C14.86,136.87,0,122.01,0,103.7v-17.54c0-3.3,2.68-5.98,5.98-5.98Z" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
@@ -197,7 +197,7 @@
       <rect x="27.87" y="15.57" width="42" height="70.17" style="fill: #1d1d1b; stroke: #1d1d1b;"/>
     </g>
   </g>
-  <text region="14" name="Zlinsky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="800" y="420" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
+  <text region="14" name="Zlinsky kraj" style="fill: rgb(0, 0, 0); stroke: rgb(0, 0, 0); font-family: Arial, sans-serif; font-size: 28px; white-space: pre;" x="785" y="405" id="object-0" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">0</text>
   <g id="314" name="14" transform="translate(720, 345)">
     <g id="114" x="0" y="0" transform="scale(0.12), translate(350, 370)">
       <rect x="28.35" y="136.87" width="56.69" height="226.77" style="fill: #1d1d1b; stroke: #1d1d1b;"/>

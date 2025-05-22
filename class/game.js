@@ -28,11 +28,11 @@ class Game {
 
   capitalTimer = 10
   conquestTimer = 15
-  battleTimer = 10
+  battleTimer = 15
   choiceQTimer = 15
-  speedQTimer = 15
+  speedQTimer = 10
   questionSets = []
-  maxBattleRound = 1 //each player this many times
+  maxBattleRound = 2 //each player this many times
   capitalScore = 500
   capitalExtraLives = 2
   capitalLiveScore = 150
@@ -174,6 +174,8 @@ class Game {
   async startSetup () {
     this.giveOutIds()
     this.setupRegionScores()
+    this.getNewChoiceQuestion()
+    this.getNewSpeedQuestion()
     const selectionRow = new ActionRowBuilder()
     const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select capital location!').addOptions(this.getAllRegionsToSelect());
     selectionRow.addComponents(selectTest)
@@ -246,12 +248,17 @@ class Game {
         this.gameInfo.push(player.username + " passed their turn")
       }
     })
-    targettedRegions.forEach((players, region) => {
-      this.serveChoiceQuestion(players, region)
-    })
-    setTimeout(() => {
+    if (targettedRegions.size > 0) {
+      this.logChoiceQuestion()
+      targettedRegions.forEach((players, region) => {
+        this.serveChoiceQuestion(players, region)
+      })
+      setTimeout(() => {
+        this.evaluateAnswers()
+      }, this.choiceQTimer * 1000)
+    } else {
       this.evaluateAnswers()
-    }, this.choiceQTimer * 1000)
+    }
   }
 
   switchBattlePlayer () {
@@ -304,15 +311,20 @@ class Game {
         this.gameInfo.push(player.username + " passed their turn")
       }
     })
-    targettedRegions.forEach((players, region) => {
-      if (this.gameState === "battle") {
-        players.push(this.regionOwners.get(region))
-      }
-      this.serveChoiceQuestion(players, region)
-    })
-    setTimeout(() => {
+    if (targettedRegions.size > 0) {
+      this.logChoiceQuestion()
+      targettedRegions.forEach((players, region) => {
+        if (this.gameState === "battle") { //what is this? its in battleHandler
+          players.push(this.regionOwners.get(region))
+        }
+        this.serveChoiceQuestion(players, region)
+      })
+      setTimeout(() => {
+        this.evaluateAnswers()
+      }, this.choiceQTimer * 1000)
+    } else {
       this.evaluateAnswers()
-    }, this.choiceQTimer * 1000)
+    }
   }
 
   handleSetupLosers () {
@@ -326,7 +338,7 @@ class Game {
         })
         let randomRegion = Math.floor(Math.random() * openRegions.length)
         this.setOwner(openRegions[randomRegion], player)
-        this.capitalLives.set(randomRegion, this.capitalExtraLives)
+        this.capitalLives.set(openRegions[randomRegion], this.capitalExtraLives)
       }
     })
   }
@@ -334,21 +346,24 @@ class Game {
   async capitalHandler () {
     this.players.forEach((interaction, player) => {  //randomize players who dont have intent
       if (this.currentIntent.get(player) === null) {
-        this.currentIntent.set(player, Math.floor(Math.random() * this.regionOwners.size))
+        this.currentIntent.set(player, Math.floor(Math.random() * this.regionOwners.size).toString())
       }
     })
 
     let contested = new Map() //regionId -> [interaction.user]
-    this.currentIntent.forEach((value, key) => { //regionId, interaction.user
-      if (!contested.get(value)) {
-        contested.set(value, [])
+    this.currentIntent.forEach((regionId, player) => { //regionId, interaction.user
+      if (!contested.get(regionId)) {
+        contested.set(regionId, [])
       }
-      let contestingPlayers = contested.get(value)
-      contestingPlayers.push(key)
-      contested.set(value, contestingPlayers)
+      let contestingPlayers = contested.get(regionId)
+      contestingPlayers.push(player)
+      contested.set(regionId, contestingPlayers)
     })
 
     let contestedBool = false
+    if (contested.size > 0) {
+      this.logSpeedQuestion()
+    }
     contested.forEach((contestants, regionId) => {
       if (contestants.length > 1) {
         contestedBool = true
@@ -361,14 +376,14 @@ class Game {
     });
     if (contestedBool) {
       setTimeout(() => {
-        this.evaluateAnswers()
+        this.evaluateAnswers(true)
       }, this.speedQTimer * 1000)
     } else {
       this.endRound()
     }
   }
 
-  async evaluateAnswers () {
+  async evaluateAnswers (handlingCapitals = false) {
     let capitalFightInProgress = false
     this.evalSpeedQuestions.forEach((answers, region) => {
       let playerCloseness = [] //array of maps
@@ -406,11 +421,16 @@ class Game {
       if (this.regionOwners.get(region) !== closestPlayer) {
         if (!this.capitalLives.has(region) || this.capitalLives.get(region) === 0) {
           this.setOwner(region, closestPlayer)
+          if (handlingCapitals) {
+            this.capitalLives.set(region, this.capitalExtraLives)
+          }
         } else {
           let lives = this.capitalLives.get(region)
           lives--
           this.capitalLives.set(region, lives)
           capitalFightInProgress = true
+          this.getNewChoiceQuestion()
+          this.getNewSpeedQuestion()
           this.battleHandler()
         }
       } else {
@@ -420,10 +440,11 @@ class Game {
 
     let contestedWinners = new Map()  
     this.evalChoiceQuestions.forEach((answers, region) => {
+      let correctAnswer = this.currentChoiceAnswers.get(region)
       this.gameInfo.push("Correct answer: " + correctAnswer)
       let playersCorrectAnswer = []
       answers.forEach((answer, player) => {
-        if (answer === this.currentChoiceAnswers.get(region)) {
+        if (answer === correctAnswer) {
           playersCorrectAnswer.push(player)
           this.gameInfo.push(player.username + " -> " + answer + " ✅")
         } else {
@@ -441,6 +462,7 @@ class Game {
             lives--
             this.capitalLives.set(region, lives)
             capitalFightInProgress = true
+            this.clearAnswers()
             this.battleHandler()
           }
         } else {
@@ -458,6 +480,7 @@ class Game {
         this.endRound()
       } else {
         this.clearAnswers()
+        this.logSpeedQuestion()
         contestedWinners.forEach((players, region) => {
           this.serveSpeedQuestion(players, region)
         })
@@ -471,6 +494,9 @@ class Game {
         this.endRound()
       } else {
         this.clearAnswers()
+        if (contestedWinners.size > 0) {
+          this.logSpeedQuestion()
+        }
         contestedWinners.forEach((players, region) => {
           this.serveSpeedQuestion(players, region)
         })
@@ -483,6 +509,8 @@ class Game {
 
   async endRound () {
     this.distributeInfo()
+    this.getNewChoiceQuestion()
+    this.getNewSpeedQuestion()
     if (this.gameState === "battle") {
       this.switchBattlePlayer()
       if (this.currentBattleRound > this.maxBattleRound) {
@@ -498,9 +526,9 @@ class Game {
       await this.updateVisualization()
       this.cleanTemporaryVariables()
       if (this.getUnownedRegions().size > 0) {
-        this.gameState = "battle" //temporary testing thingy
-        this.startBattleTurn() //temporary testing thingy
-        //this.startConquerTurn()
+        //this.gameState = "battle" //temporary testing thingy
+        //this.startBattleTurn() //temporary testing thingy
+        this.startConquerTurn()
       } else {
         this.gameState = "battle"
         this.startBattleTurn()
@@ -519,9 +547,14 @@ class Game {
 
   cleanTemporaryVariables () {
     this.currentIntent = new Map() //should be every player -> null instead
-    this.players.forEach((interaction, player) => {
+    if (this.gameState !== "battle") {
+      this.players.forEach((interaction, player) => {
+        this.currentIntent.set(player, null) 
+      })
+    } else {
+      let player = this.playersById.get(this.currentBattlePlayer)
       this.currentIntent.set(player, null) 
-    })
+    }
     this.playerWonQuestion = new Map()
     this.clearAnswers()
   }
@@ -643,7 +676,11 @@ class Game {
     return allRegions
   }
 
-  async serveChoiceQuestion (players, region) { //players is []
+  async serveChoiceQuestion (players, region, rollQuestion = false) { //players is []
+    this.distributeInfo()
+    if (rollQuestion) {
+      this.getNewChoiceQuestion()
+    }
     let questionText = "Q: Which answer do you like?"
     let answer1 = "Answer 1"
     let answer2 = "Answer 2"
@@ -694,9 +731,12 @@ class Game {
     })
   }
 
-  async serveSpeedQuestion (players, region) {
+  async serveSpeedQuestion (players, region, rollQuestion = false) {
+    this.distributeInfo()
     //get the actual question here
-
+    if (rollQuestion) {
+      this.getNewSpeedQuestion()
+    }
     let questionText = "Q: QUESTION TEXT HERE"
 
     let playersAsString = ""
@@ -712,6 +752,12 @@ class Game {
     const questionRow = new ActionRowBuilder()
     questionRow.addComponents(new TextInputBuilder().setCustomId("questionAnswer").setLabel("answer").setStyle(TextInputStyle.Short)); //should only accept numbers
     questionModal.addComponents(questionRow)
+
+    let blankAnswers = new Map()
+    players.forEach((player) => {
+      blankAnswers.set(player, [0, Math.floor(Date.now() / 1000, 1000) + this.speedQTimer + 30]) 
+    })
+    this.evalSpeedQuestions.set(region, blankAnswers)
 
     players.forEach(async (contestant) => {
       let interaction = this.players.get(contestant)
@@ -735,9 +781,9 @@ class Game {
         if (modalCollector) {
           if (modalCollector.fields.fields.get('questionAnswer').value) {
             modalCollector.deferReply({ ephemeral: true })
-            if (!this.evalSpeedQuestions.has(region)) {
-              this.evalSpeedQuestions.set(region, new Map())
-            }
+            // if (!this.evalSpeedQuestions.has(region)) {
+            //   this.evalSpeedQuestions.set(region, new Map())
+            // }
             let answerMap = this.evalSpeedQuestions.get(region)
             let answerToSet = modalCollector.fields.fields.get('questionAnswer').value.replace(/\D/g, '')
             if (answerToSet.length === 0) {
@@ -749,6 +795,22 @@ class Game {
         }
       })
     })
+  }
+
+  getNewChoiceQuestion () { //called on conquer turn start and battle questions
+    
+  }
+
+  getNewSpeedQuestion () { //called on conquer turn start and battle questions
+
+  }
+
+  logChoiceQuestion () {
+
+  }
+
+  logSpeedQuestion () {
+
   }
 
   incrementBonusScore (player) {
@@ -808,12 +870,10 @@ class Game {
     this.playerDisabled.set(interaction.user, true)
   }
 
-  sendFinalPlacements () { //TODO
-    console.log(this.playerScores)
+  async sendFinalPlacements () {
     let playerOrder = new Map([...this.playerScores.entries()].sort((a, b) => b[1] - a[1])); //sorted descendingly
     let placementMessage = ""
     let placement = 1
-    console.log(playerOrder)
     playerOrder.forEach((score, player) => {
       if (placement === 1) {
         placementMessage += "🏆"
@@ -827,10 +887,12 @@ class Game {
       placementMessage += player.username + " - " + score + "\n"
       placement++
     })
+    await this.updateVisualization()
     this.players.forEach((interaction, player) => {
       if (this.playerDisabled.get(player) !== true) {
         interaction.followUp({
           content: placementMessage,
+          files: [{ attachment: this.pngMap }],
           ephemeral: true
         })
       }
@@ -840,7 +902,7 @@ class Game {
   async finalizeGame () { // TODO
     this.calculateScores()
     //TODO: tiebreaker question
-    this.sendFinalPlacements()
+    await this.sendFinalPlacements()
     //TODO: record results to db
     this.server.currentGames.delete(this.gameId)
   }
