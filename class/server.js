@@ -14,6 +14,7 @@ class Server {
   client = null
   
   constructor () {
+    dotenv.config()
     this.connectToDB()
     this.loadQuestions()
   }
@@ -65,12 +66,12 @@ class Server {
   }
 
   async loadQuestions () {
-    let [speedQsData, choiceQsData] = await Promise.all([client.query('SELECT * FROM approximateQuestions'), client.query('SELECT * FROM exactQuestions')])
+    let [speedQsData, choiceQsData] = await Promise.all([this.client.query('SELECT * FROM discordbot.\"approximateQuestions\" ORDER BY id ASC'), this.client.query('SELECT * FROM discordbot.\"exactQuestions\" ORDER BY id ASC')])
     let choiceQsets = new Map()
     let speedQsets = new Map()
 
-    choiceQsData.forEach(row => {
-      if (row.status === 1) {
+    choiceQsData.rows.forEach(row => {
+      if (row.status === "1") {
         if (!choiceQsets.has(row.set_id)) {
           choiceQsets.set(row.set_id, [])
         }
@@ -82,8 +83,8 @@ class Server {
     });
     this.choiceQuestionSets = choiceQsets
 
-    speedQsData.forEach(row => {
-      if (row.status === 1) {
+    speedQsData.rows.forEach(row => {
+      if (row.status === "1") {
         if (!speedQsets.has(row.set_id)) {
           speedQsets.set(row.set_id, [])
         }
@@ -103,16 +104,16 @@ class Server {
     let randomSetIndex = desiredSets[Math.floor(Math.random() * desiredSets.length)] //get random set id
     let rolledSet = null
     if (speedQ) {
-      rolledSet = this.speedQuestionSets.get(randomSetIndex)
+      rolledSet = this.speedQuestionSets.get(randomSetIndex.toString())
     } else {
-      rolledSet = this.choiceQuestionSets.get(randomSetIndex)
+      rolledSet = this.choiceQuestionSets.get(randomSetIndex.toString())
     }
     let randomQuestionIndex = Math.floor(Math.random() * rolledSet.length)
     let questionToReturn = null
     let noQuestionSelected = true
     let i = 0
     while (noQuestionSelected) {
-      questionToReturn = rolledSet.get(randomQuestionIndex)
+      questionToReturn = rolledSet[randomQuestionIndex]
       if (i < 50) { // failsafe if it runs out of questions
         if (usedQuestions.includes(questionToReturn.id)) {
           randomQuestionIndex = Math.floor(Math.random() * rolledSet.length)

@@ -1,6 +1,6 @@
 const xmljs = require("xml-js");
 const fs = require("pn/fs");
-const Helper = require("./utility/helper.js")
+const { shuffleArray } = require("./utility/helper.js")
 const svg2png = require("svg2png");
 const { ChoiceQuestion } = require("./question/choiceQuestion.js")
 const { SpeedQuestion } = require("./question/speedQuestion.js")
@@ -99,7 +99,7 @@ class Game {
         }
         distribute.push(100 + (y * 100))
       }
-      distribute = Helper.shuffleArray(distribute)
+      distribute = shuffleArray(distribute)
       let i = 0
       this.regionOwners.forEach((owner, region) => {
         this.regionScores.set(region, distribute[i])
@@ -401,7 +401,7 @@ class Game {
       let closestDistance = null
       let closestTimestamp = null
       let correctAnswer = this.currentSpeedAnswers.get(region)
-      this.gameInfo.push("Correct answer: " + correctAnswer)
+      this.gameInfo.push("Correct answer: " + this.sendableSpeedQ.correctAnswer)
       answers.forEach((answer, player) => { //answer is [answer, timestamp]
         let playerAnswer = new Map().set(player, ([Math.abs(correctAnswer - answer[0]), answer[1]])) //[player => [distance, timestamp]]
         playerCloseness.push(playerAnswer)
@@ -426,7 +426,7 @@ class Game {
       })
       this.playerWonQuestion.forEach((answerStatus, player) => {
         let symbol = answerStatus ? "✅" : "❌"
-        this.gameInfo.push(player.username + " -> " + answers.get(player)[0] + " (" + (-(correctAnswer - answers.get(player)[0])) + ") " + symbol)
+        this.gameInfo.push(player.username + " -> " + answers.get(player)[0] + " (" + (-(correctAnswer - answers.get(player)[0])) + ") " + symbol) //... it should only be guy one right?
       })
       if (this.regionOwners.get(region) !== closestPlayer) {
         if (!this.capitalLives.has(region) || this.capitalLives.get(region) === 0) {
@@ -451,14 +451,14 @@ class Game {
     let contestedWinners = new Map()  
     this.evalChoiceQuestions.forEach((answers, region) => {
       let correctAnswer = this.currentChoiceAnswers.get(region)
-      this.gameInfo.push("Correct answer: " + correctAnswer)
+      this.gameInfo.push("Correct answer: " + this.sendableChoiceQ.correctAnswer)
       let playersCorrectAnswer = []
       answers.forEach((answer, player) => {
         if (answer === correctAnswer) {
           playersCorrectAnswer.push(player)
-          this.gameInfo.push(player.username + " -> " + answer + " ✅")
+          this.gameInfo.push(player.username + " -> " + this.choiceAnswerShuffled[answer] + " ✅")
         } else {
-          this.gameInfo.push(player.username + " -> " + answer + " ❌")
+          this.gameInfo.push(player.username + " -> " + this.choiceAnswerShuffled[answer] + " ❌")
         }
       })
       if (playersCorrectAnswer.length > 1) {
@@ -693,9 +693,9 @@ class Game {
     }
     let questionText = this.sendableChoiceQ.questionText
     let answer1 = this.choiceAnswerShuffled[0]
-    let answer2 = this.choiceAnswerShuffled[0]
-    let answer3 = this.choiceAnswerShuffled[0]
-    let answer4 = this.choiceAnswerShuffled[0]
+    let answer2 = this.choiceAnswerShuffled[1]
+    let answer3 = this.choiceAnswerShuffled[2]
+    let answer4 = this.choiceAnswerShuffled[3]
     this.currentChoiceAnswers.set(region, this.choiceCorrectAnswer.toString()) //0-3
 
     // let playersAsString = ""
@@ -802,8 +802,8 @@ class Game {
     this.sendableChoiceQ = this.server.serveQuestionToGame(false, this.questionSets, this.usedChoiceQ)
     this.usedChoiceQ.push(this.sendableChoiceQ.id)
 
-    this.choiceAnswerShuffled = shuffleArray([sendableChoiceQ.correctAnswer, sendableChoiceQ.answer1, sendableChoiceQ.answer2, sendableChoiceQ.answer3]) 
-    this.choiceCorrectAnswer = this.choiceAnswerShuffled.indexOf(sendableChoiceQ.correctAnswer)
+    this.choiceAnswerShuffled = shuffleArray([this.sendableChoiceQ.correctAnswer, this.sendableChoiceQ.answer1, this.sendableChoiceQ.answer2, this.sendableChoiceQ.answer3]) 
+    this.choiceCorrectAnswer = this.choiceAnswerShuffled.indexOf(this.sendableChoiceQ.correctAnswer)
   }
 
   getNewSpeedQuestion () { //called on conquer turn start and battle questions
