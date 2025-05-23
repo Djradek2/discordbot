@@ -69,18 +69,6 @@ class Server {
     let choiceQsets = new Map()
     let speedQsets = new Map()
 
-    speedQsData.forEach(row => {
-      if (row.status === 1) {
-        if (!speedQsets.has(row.set_id)) {
-          speedQsets.set(row.set_id, [])
-        }
-        let speedQ = new SpeedQuestion(row.id, row.set_id, row.question_text, row.correct)
-        let placeToPush = speedQsets.get(row.set_id)
-        placeToPush.push(speedQ)
-        speedQsets.set(row.set_id, placeToPush)
-      }
-    });
-
     choiceQsData.forEach(row => {
       if (row.status === 1) {
         if (!choiceQsets.has(row.set_id)) {
@@ -92,10 +80,51 @@ class Server {
         choiceQsets.set(row.set_id, placeToPush)
       }
     });
+    this.choiceQuestionSets = choiceQsets
+
+    speedQsData.forEach(row => {
+      if (row.status === 1) {
+        if (!speedQsets.has(row.set_id)) {
+          speedQsets.set(row.set_id, [])
+        }
+        let speedQ = new SpeedQuestion(row.id, row.set_id, row.question_text, row.correct)
+        let placeToPush = speedQsets.get(row.set_id)
+        placeToPush.push(speedQ)
+        speedQsets.set(row.set_id, placeToPush)
+      }
+    });
+    this.speedQuestionSets = speedQsets
   }
 
-  serveQuestionsToGame (desiredSets) { 
-
+  //bool speedQ - whether it is a speed or choice question
+  //array desiredSets - which sets is the game using
+  //array usedQuestions - already used questions to avoid
+  serveQuestionToGame (speedQ, desiredSets, usedQuestions) { 
+    let randomSetIndex = desiredSets[Math.floor(Math.random() * desiredSets.length)] //get random set id
+    let rolledSet = null
+    if (speedQ) {
+      rolledSet = this.speedQuestionSets.get(randomSetIndex)
+    } else {
+      rolledSet = this.choiceQuestionSets.get(randomSetIndex)
+    }
+    let randomQuestionIndex = Math.floor(Math.random() * rolledSet.length)
+    let questionToReturn = null
+    let noQuestionSelected = true
+    let i = 0
+    while (noQuestionSelected) {
+      questionToReturn = rolledSet.get(randomQuestionIndex)
+      if (i < 50) { // failsafe if it runs out of questions
+        if (usedQuestions.includes(questionToReturn.id)) {
+          randomQuestionIndex = Math.floor(Math.random() * rolledSet.length)
+          i++
+        } else {
+          noQuestionSelected = false
+        }
+      } else {
+        noQuestionSelected = false
+      }
+    }
+    return questionToReturn
   }
 }
 

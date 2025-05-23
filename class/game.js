@@ -34,6 +34,8 @@ class Game {
   choiceQTimer = 15
   speedQTimer = 10
   questionSets = []
+  usedChoiceQ = []
+  usedSpeedQ = []
   maxBattleRound = 2 //each player this many times
   capitalScore = 500
   capitalExtraLives = 2
@@ -49,6 +51,8 @@ class Game {
   playerWonQuestion = new Map() //inter.user -> bool  
 
   sendableChoiceQ = new ChoiceQuestion()
+  choiceAnswerShuffled = [] //array of strings
+  choiceCorrectAnswer = null //int 0-3
   sendableSpeedQ = new SpeedQuestion()
 
   currentBattlePlayer = 1
@@ -58,10 +62,11 @@ class Game {
   playerScores = new Map() //inter.user -> score
 
 
-  constructor (mapName, players, gameId, server) { //write self to server
+  constructor (mapName, players, gameId, server, questionSets) { //write self to server
     this.gameId = gameId
     this.server = server
     this.players = players
+    this.questionSets = questionSets
     this.mapBuffer = xmljs.xml2js(fs.readFileSync("./maps/" + mapName + ".svg", "utf8"), { compact: true }) //this should actually already be loaded on server start and just be passed to the buffer
     this.dataBuffer = xmljs.xml2js(fs.readFileSync("./maps/" + mapName + ".xml", "utf8"), { compact: true })
     this.loadRegionData()
@@ -683,33 +688,27 @@ class Game {
 
   async serveChoiceQuestion (players, region, rollQuestion = false) { //players is []
     this.distributeInfo()
-    if (rollQuestion) {
+    if (rollQuestion) { //used in capital battles
       this.getNewChoiceQuestion()
     }
-    let questionText = "Q: Which answer do you like?"
-    let answer1 = "Answer 1"
-    let answer2 = "Answer 2"
-    let answer3 = "Answer 3"
-    let answer4 = "Answer 4"
+    let questionText = this.sendableChoiceQ.questionText
+    let answer1 = this.choiceAnswerShuffled[0]
+    let answer2 = this.choiceAnswerShuffled[0]
+    let answer3 = this.choiceAnswerShuffled[0]
+    let answer4 = this.choiceAnswerShuffled[0]
+    this.currentChoiceAnswers.set(region, this.choiceCorrectAnswer.toString()) //0-3
 
-    let playersAsString = ""
-    players.forEach((player) => {
-      playersAsString += player.username + ", "
-    })
-    playersAsString = playersAsString.slice(0, -2)
-
-    this.currentChoiceAnswers.set(region, "answer2")
-    this.gameInfo.push(questionText + " (" + playersAsString + ")")
-    this.gameInfo.push("a) " + answer1)
-    this.gameInfo.push("b) " + answer2)
-    this.gameInfo.push("c) " + answer3)
-    this.gameInfo.push("d) " + answer4)
+    // let playersAsString = ""
+    // players.forEach((player) => {
+    //   playersAsString += player.username + ", "
+    // })
+    // playersAsString = playersAsString.slice(0, -2)
 
     const answerRow = new ActionRowBuilder()
-    answerRow.addComponents(new ButtonBuilder().setCustomId("answer1").setLabel(answer1).setStyle(ButtonStyle.Primary))
-    answerRow.addComponents(new ButtonBuilder().setCustomId("answer2").setLabel(answer2).setStyle(ButtonStyle.Primary))
-    answerRow.addComponents(new ButtonBuilder().setCustomId("answer3").setLabel(answer3).setStyle(ButtonStyle.Primary))
-    answerRow.addComponents(new ButtonBuilder().setCustomId("answer4").setLabel(answer4).setStyle(ButtonStyle.Primary))
+    answerRow.addComponents(new ButtonBuilder().setCustomId("0").setLabel(answer1).setStyle(ButtonStyle.Primary))
+    answerRow.addComponents(new ButtonBuilder().setCustomId("1").setLabel(answer2).setStyle(ButtonStyle.Primary))
+    answerRow.addComponents(new ButtonBuilder().setCustomId("2").setLabel(answer3).setStyle(ButtonStyle.Primary))
+    answerRow.addComponents(new ButtonBuilder().setCustomId("3").setLabel(answer4).setStyle(ButtonStyle.Primary))
 
     players.forEach(async (contestant) => {
       let interaction = this.players.get(contestant)
@@ -738,22 +737,19 @@ class Game {
 
   async serveSpeedQuestion (players, region, rollQuestion = false) {
     this.distributeInfo()
-    //get the actual question here
     if (rollQuestion) {
       this.getNewSpeedQuestion()
     }
-    let questionText = "Q: QUESTION TEXT HERE"
+    let questionText = this.sendableSpeedQ.questionText
+    this.currentSpeedAnswers.set(region, this.sendableSpeedQ.correctAnswer)
 
-    let playersAsString = ""
-    players.forEach((player) => {
-      playersAsString += player.username + ", "
-    })
-    playersAsString = playersAsString.slice(0, -2)
+    // let playersAsString = ""
+    // players.forEach((player) => {
+    //   playersAsString += player.username + ", "
+    // })
+    // playersAsString = playersAsString.slice(0, -2)
 
-    this.currentSpeedAnswers.set(region, 10) //put in the correct answer
-    this.gameInfo.push(questionText + " (" + playersAsString + ")")
-
-    const questionModal = new ModalBuilder().setCustomId('speedQuestion').setTitle('QUESTION TEXT HERE')
+    const questionModal = new ModalBuilder().setCustomId('speedQuestion').setTitle(questionText)
     const questionRow = new ActionRowBuilder()
     questionRow.addComponents(new TextInputBuilder().setCustomId("questionAnswer").setLabel("answer").setStyle(TextInputStyle.Short)); //should only accept numbers
     questionModal.addComponents(questionRow)
@@ -803,19 +799,28 @@ class Game {
   }
 
   getNewChoiceQuestion () { //called on conquer turn start and battle questions
-    
+    this.sendableChoiceQ = this.server.serveQuestionToGame(false, this.questionSets, this.usedChoiceQ)
+    this.usedChoiceQ.push(this.sendableChoiceQ.id)
+
+    this.choiceAnswerShuffled = shuffleArray([sendableChoiceQ.correctAnswer, sendableChoiceQ.answer1, sendableChoiceQ.answer2, sendableChoiceQ.answer3]) 
+    this.choiceCorrectAnswer = this.choiceAnswerShuffled.indexOf(sendableChoiceQ.correctAnswer)
   }
 
   getNewSpeedQuestion () { //called on conquer turn start and battle questions
-
+    this.sendableSpeedQ = this.server.serveQuestionToGame(true, this.questionSets, this.usedSpeedQ)
+    this.usedSpeedQ.push(this.sendableSpeedQ.id)
   }
 
   logChoiceQuestion () {
-
+    this.gameInfo.push(this.sendableChoiceQ.questionText)
+    this.gameInfo.push("a) " + this.choiceAnswerShuffled[0])
+    this.gameInfo.push("b) " + this.choiceAnswerShuffled[1])
+    this.gameInfo.push("c) " + this.choiceAnswerShuffled[2])
+    this.gameInfo.push("d) " + this.choiceAnswerShuffled[3])
   }
 
   logSpeedQuestion () {
-
+    this.gameInfo.push(this.sendableSpeedQ.questionText)
   }
 
   incrementBonusScore (player) {
