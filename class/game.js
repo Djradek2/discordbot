@@ -201,11 +201,16 @@ class Game {
         const lobbyCollector = memberResponse.createMessageComponentCollector({
           time: this.capitalTimer * 1000,
         });
-        lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-          interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-          this.players.set(interaction2.user, interaction2)
-          this.currentIntent.set(user, interaction2.values[0])
-        })
+        try {
+          lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+            interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+            this.players.set(interaction2.user, interaction2)
+            this.currentIntent.set(user, interaction2.values[0])
+          })
+        } catch (e) {
+          console.log("Capital target collector failed!")
+        }
+
       }
     })
     setTimeout(() => {
@@ -229,11 +234,16 @@ class Game {
         const lobbyCollector = memberResponse.createMessageComponentCollector({
           time: this.conquestTimer * 1000,
         });
-        lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-          interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-          this.players.set(interaction2.user, interaction2)
-          this.currentIntent.set(user, interaction2.values[0])
-        })
+        try {
+          lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+            interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+            this.players.set(interaction2.user, interaction2)
+            this.currentIntent.set(user, interaction2.values[0])
+          })
+        } catch (e) {
+          console.log("Conquer target collector failed!")
+        }
+
       }
     })
     setTimeout(() => {
@@ -244,7 +254,9 @@ class Game {
   conquerHandler () {
     this.distributeInfo() //player targets
     let targettedRegions = new Map()
+    let someoneHasIntent = false //just for gameInfo to add a readability gap
     this.currentIntent.forEach((region, player) => {
+      someoneHasIntent = true
       if (region !== null) {
         if (!targettedRegions.has(region)) { //first player targetting given region
           targettedRegions.set(region, [player])
@@ -258,6 +270,9 @@ class Game {
         this.gameInfo.push(player.username + " passed their turn")
       }
     })
+    if (someoneHasIntent) {
+      this.gameInfo.push("")
+    }
     if (targettedRegions.size > 0) {
       this.logChoiceQuestion()
       targettedRegions.forEach((players, region) => {
@@ -294,11 +309,16 @@ class Game {
     const lobbyCollector = memberResponse.createMessageComponentCollector({
       time: this.battleTimer * 1000,
     });
-    lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-      interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-      this.players.set(interaction2.user, interaction2)
-      this.currentIntent.set(user, interaction2.values[0])
-    })
+    try {
+      lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+        interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+        this.players.set(interaction2.user, interaction2)
+        this.currentIntent.set(user, interaction2.values[0])
+      })
+    } catch (e) {
+      console.log("Battle target collector failed!")
+    }
+
     setTimeout(() => {
       this.battleHandler()
     }, this.battleTimer * 1000)
@@ -698,12 +718,6 @@ class Game {
     let answer4 = this.choiceAnswerShuffled[3]
     this.currentChoiceAnswers.set(region, this.choiceCorrectAnswer.toString()) //0-3
 
-    // let playersAsString = ""
-    // players.forEach((player) => {
-    //   playersAsString += player.username + ", "
-    // })
-    // playersAsString = playersAsString.slice(0, -2)
-
     const answerRow = new ActionRowBuilder()
     answerRow.addComponents(new ButtonBuilder().setCustomId("0").setLabel(answer1).setStyle(ButtonStyle.Primary))
     answerRow.addComponents(new ButtonBuilder().setCustomId("1").setLabel(answer2).setStyle(ButtonStyle.Primary))
@@ -723,15 +737,19 @@ class Game {
         time: this.choiceQTimer * 1000,
       });
 
-      collector.on('collect', async (interaction2) => {
-        interaction2.deferUpdate()
-        if (!this.evalChoiceQuestions.has(region)) {
-          this.evalChoiceQuestions.set(region, new Map())
-        }
-        let answerMap = this.evalChoiceQuestions.get(region)
-        answerMap.set(interaction2.user, interaction2.customId)
-        this.evalChoiceQuestions.set(region, answerMap)
-      });
+      try {
+        collector.on('collect', async (interaction2) => {
+          interaction2.deferUpdate()
+          if (!this.evalChoiceQuestions.has(region)) {
+            this.evalChoiceQuestions.set(region, new Map())
+          }
+          let answerMap = this.evalChoiceQuestions.get(region)
+          answerMap.set(interaction2.user, interaction2.customId)
+          this.evalChoiceQuestions.set(region, answerMap)
+        });
+      } catch (e) {
+        console.log("Choice question collector failed!")
+      }
     })
   }
 
@@ -743,13 +761,7 @@ class Game {
     let questionText = this.sendableSpeedQ.questionText
     this.currentSpeedAnswers.set(region, this.sendableSpeedQ.correctAnswer)
 
-    // let playersAsString = ""
-    // players.forEach((player) => {
-    //   playersAsString += player.username + ", "
-    // })
-    // playersAsString = playersAsString.slice(0, -2)
-
-    const questionModal = new ModalBuilder().setCustomId('speedQuestion').setTitle(questionText)
+    const questionModal = new ModalBuilder().setCustomId('speedQuestion').setTitle(questionText.slice(0, 45))
     const questionRow = new ActionRowBuilder()
     questionRow.addComponents(new TextInputBuilder().setCustomId("questionAnswer").setLabel("answer").setStyle(TextInputStyle.Short)); //should only accept numbers
     questionModal.addComponents(questionRow)
@@ -773,28 +785,32 @@ class Game {
         time: this.speedQTimer * 1000,
       });
 
-      lobbyCollector.on('collect', async (interaction2) => { //this never stops collecting with editReply...
-        await interaction2.showModal(questionModal)
-        let modalCollector = await interaction2.awaitModalSubmit({
-          time: this.capitalTimer * 1000,
-          filter: i => i.user.id === interaction2.user.id,
-        })
-        if (modalCollector) {
-          if (modalCollector.fields.fields.get('questionAnswer').value) {
-            modalCollector.deferReply({ ephemeral: true })
-            // if (!this.evalSpeedQuestions.has(region)) {
-            //   this.evalSpeedQuestions.set(region, new Map())
-            // }
-            let answerMap = this.evalSpeedQuestions.get(region)
-            let answerToSet = modalCollector.fields.fields.get('questionAnswer').value.replace(/\D/g, '')
-            if (answerToSet.length === 0) {
-              answerToSet = 0
+      try {
+        lobbyCollector.on('collect', async (interaction2) => { //this never stops collecting with editReply...
+          await interaction2.showModal(questionModal)
+          let modalCollector = await interaction2.awaitModalSubmit({
+            time: this.speedQTimer * 1000,
+            filter: i => i.user.id === interaction2.user.id,
+          }).catch(console.error)
+          if (modalCollector) {
+            if (modalCollector.fields.fields.get('questionAnswer').value) {
+              modalCollector.deferReply({ ephemeral: true })
+              // if (!this.evalSpeedQuestions.has(region)) {
+              //   this.evalSpeedQuestions.set(region, new Map())
+              // }
+              let answerMap = this.evalSpeedQuestions.get(region)
+              let answerToSet = modalCollector.fields.fields.get('questionAnswer').value.replace(/\D/g, '')
+              if (answerToSet.length === 0) {
+                answerToSet = 0
+              }
+              answerMap.set(interaction2.user, [answerToSet, modalCollector.createdTimestamp])
+              this.evalSpeedQuestions.set(region, answerMap)
             }
-            answerMap.set(interaction2.user, [answerToSet, modalCollector.createdTimestamp])
-            this.evalSpeedQuestions.set(region, answerMap)
           }
-        }
-      })
+        })
+      } catch (e) {
+        console.log("Speed question collector failed!")
+      }
     })
   }
 

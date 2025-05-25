@@ -60,7 +60,7 @@ module.exports = {
             let connected = server.attemptJoinLobby(modalCollector.fields.fields.get('lobbycode').value, interaction2)
             if (connected) {
               interaction2.followUp({
-                content: "Successfully joined lobby!",
+                content: "Successfully joined the lobby!",
                 ephemeral: true,
               })
             } else if (!connected) {
