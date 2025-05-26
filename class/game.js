@@ -136,7 +136,7 @@ class Game {
         }
       } else {
         if (this.playersById.get(playerIterator)) {
-          textfield._text = this.playersById.get(playerIterator).username.substring(0, 11) + " - " + this.playerScores.get(this.playersById.get(playerIterator)) // player username (up to 11 letters) and "- score"
+          textfield._text = this.playersById.get(playerIterator).globalName.substring(0, 11) + " - " + this.playerScores.get(this.playersById.get(playerIterator)) // player username (up to 11 letters) and "- score"
         }
         playerIterator++
       }
@@ -165,8 +165,8 @@ class Game {
   }
 
   setOwner (regionId, playerId) {
-    //console.log(playerId.username + " became owner of " + regionId)
-    this.gameInfo.push(playerId.username + " became owner of " + regionId)
+    console.log(playerId.username + " became owner of " + regionId)
+    this.gameInfo.push(playerId.globalName + " became owner of " + regionId)
     this.regionOwners.set(String(regionId), playerId)
   }
 
@@ -265,12 +265,12 @@ class Game {
           targettingPlayers.push(player)
           targettedRegions.set(region, targettingPlayers)
         }
-        this.gameInfo.push(player.username + " is targetting region " + region)
+        this.gameInfo.push(player.globalName + " is targetting region " + region)
       } else {
-        this.gameInfo.push(player.username + " passed their turn")
+        this.gameInfo.push(player.globalName + " passed their turn")
       }
     })
-    if (someoneHasIntent) {
+    if (someoneHasIntent) { // essentialy someone should always have intent anyway
       this.gameInfo.push("")
     }
     if (targettedRegions.size > 0) {
@@ -336,11 +336,12 @@ class Game {
           targettingPlayers.push(player)
           targettedRegions.set(region, targettingPlayers)
         }
-        this.gameInfo.push(player.username + " is targetting region " + region)
+        this.gameInfo.push(player.globalName + " is targetting region " + region)
       } else {
-        this.gameInfo.push(player.username + " passed their turn")
+        this.gameInfo.push(player.globalName + " passed their turn")
       }
     })
+    this.gameInfo.push("")
     if (targettedRegions.size > 0) {
       this.logChoiceQuestion()
       targettedRegions.forEach((players, region) => {
@@ -391,9 +392,6 @@ class Game {
     })
 
     let contestedBool = false
-    if (contested.size > 0) {
-      this.logSpeedQuestion()
-    }
     contested.forEach((contestants, regionId) => {
       if (contestants.length > 1) {
         contestedBool = true
@@ -405,6 +403,7 @@ class Game {
       }
     });
     if (contestedBool) {
+      this.logSpeedQuestion()
       setTimeout(() => {
         this.evaluateAnswers(true)
       }, this.speedQTimer * 1000)
@@ -415,13 +414,15 @@ class Game {
 
   async evaluateAnswers (handlingCapitals = false) {
     let capitalFightInProgress = false
+    if(this.evalSpeedQuestions.size > 0) {
+      this.gameInfo.push("Correct answer: " + this.sendableSpeedQ.correctAnswer)
+    }
     this.evalSpeedQuestions.forEach((answers, region) => {
       let playerCloseness = [] //array of maps
       let closestPlayer = null
       let closestDistance = null
       let closestTimestamp = null
       let correctAnswer = this.currentSpeedAnswers.get(region)
-      this.gameInfo.push("Correct answer: " + this.sendableSpeedQ.correctAnswer)
       answers.forEach((answer, player) => { //answer is [answer, timestamp]
         let playerAnswer = new Map().set(player, ([Math.abs(correctAnswer - answer[0]), answer[1]])) //[player => [distance, timestamp]]
         playerCloseness.push(playerAnswer)
@@ -446,8 +447,9 @@ class Game {
       })
       this.playerWonQuestion.forEach((answerStatus, player) => {
         let symbol = answerStatus ? "✅" : "❌"
-        this.gameInfo.push(player.username + " -> " + answers.get(player)[0] + " (" + (-(correctAnswer - answers.get(player)[0])) + ") " + symbol) //... it should only be guy one right?
+        this.gameInfo.push(player.globalName + " -> " + answers.get(player)[0] + " (" + (-(correctAnswer - answers.get(player)[0])) + ") " + symbol) //... it should only be guy one right?
       })
+      this.gameInfo.push("")
       if (this.regionOwners.get(region) !== closestPlayer) {
         if (!this.capitalLives.has(region) || this.capitalLives.get(region) === 0) {
           this.setOwner(region, closestPlayer)
@@ -459,6 +461,7 @@ class Game {
           lives--
           this.capitalLives.set(region, lives)
           capitalFightInProgress = true
+          this.clearAnswers()
           this.getNewChoiceQuestion()
           this.getNewSpeedQuestion()
           this.battleHandler()
@@ -469,18 +472,23 @@ class Game {
     })
 
     let contestedWinners = new Map()  
+    if(this.evalChoiceQuestions.size > 0) {
+      this.gameInfo.push("Correct answer: " + this.sendableChoiceQ.correctAnswer)
+    }
     this.evalChoiceQuestions.forEach((answers, region) => {
       let correctAnswer = this.currentChoiceAnswers.get(region)
-      this.gameInfo.push("Correct answer: " + this.sendableChoiceQ.correctAnswer)
       let playersCorrectAnswer = []
       answers.forEach((answer, player) => {
         if (answer === correctAnswer) {
           playersCorrectAnswer.push(player)
-          this.gameInfo.push(player.username + " -> " + this.choiceAnswerShuffled[answer] + " ✅")
+          this.gameInfo.push(player.globalName + " -> " + this.choiceAnswerShuffled[answer] + " ✅")
         } else {
-          this.gameInfo.push(player.username + " -> " + this.choiceAnswerShuffled[answer] + " ❌")
+          this.gameInfo.push(player.globalName + " -> " + this.choiceAnswerShuffled[answer] + " ❌")
         }
       })
+      if(this.gameState === "battle") {
+        this.gameInfo.push("")
+      }
       if (playersCorrectAnswer.length > 1) {
         contestedWinners.set(region, playersCorrectAnswer) //this will go to a speed question
       } else if (playersCorrectAnswer.length === 1) { //if only one has it correctly
@@ -493,6 +501,8 @@ class Game {
             this.capitalLives.set(region, lives)
             capitalFightInProgress = true
             this.clearAnswers()
+            this.getNewChoiceQuestion()
+            this.getNewSpeedQuestion()
             this.battleHandler()
           }
         } else {
@@ -554,13 +564,15 @@ class Game {
     }
     if (this.gameState === "conquer") {
       await this.updateVisualization()
-      this.cleanTemporaryVariables()
       if (this.getUnownedRegions().size > 0) {
-        //this.gameState = "battle" //temporary testing thingy
-        //this.startBattleTurn() //temporary testing thingy
+        // this.gameState = "battle" //temporary testing thingy
+        // this.cleanTemporaryVariables()
+        // this.startBattleTurn() //temporary testing thingy
+        this.cleanTemporaryVariables()
         this.startConquerTurn()
       } else {
         this.gameState = "battle"
+        this.cleanTemporaryVariables()
         this.startBattleTurn()
       }
     }
@@ -728,7 +740,7 @@ class Game {
       let interaction = this.players.get(contestant)
 
       let memberResponse = await interaction.followUp({
-        content: questionText + ", seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.choiceQTimer) + ":R>",
+        content: questionText + " seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.choiceQTimer) + ":R>",
         components: [answerRow],
         ephemeral: true
       });
@@ -777,7 +789,7 @@ class Game {
       const startAnswerRow = new ActionRowBuilder()
       startAnswerRow.addComponents(new ButtonBuilder().setCustomId("questionAnswer").setLabel("Answer question").setStyle(ButtonStyle.Primary));
       let memberResponse = await interaction.followUp({
-        content: questionText + ", seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.speedQTimer) + ":R>",
+        content: questionText + " seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.speedQTimer) + ":R>",
         components: [startAnswerRow],
         ephemeral: true
       })
@@ -853,9 +865,10 @@ class Game {
     this.playersById.forEach((player) => {
       currentScore.set(player, 0)
     })
+    console.log(this.regionOwners)
     this.regionOwners.forEach((owner, region) => { 
-      if (owner !== 0) {
-        let scoreOfOwner = currentScore.get(owner)
+      if (owner !== 0 && owner !== undefined) {
+        let scoreOfOwner = currentScore.get(owner) //owner is undefined...?
         if (this.capitalLives.has(region)) {
           scoreOfOwner += this.capitalScore
           scoreOfOwner += this.capitalLives.get(region) * this.capitalLiveScore
@@ -910,7 +923,7 @@ class Game {
       if (placement === 3) {
         placementMessage += "🥉"
       }
-      placementMessage += player.username + " - " + score + "\n"
+      placementMessage += player.globalName + " - " + score + "\n"
       placement++
     })
     await this.updateVisualization()
