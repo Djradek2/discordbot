@@ -7,7 +7,7 @@ const { SpeedQuestion } = require("./question/speedQuestion.js")
 const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, ModalBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 let colors = ["F0F0F0", "#3f47cc", "#ed1b24", "#26b050", "#fdf003", "#9dd7eb", "#ff01f5", "#7f7f7f", "#fec80e"]
-let negativeColors = ["#000000", "#ffffff", "#ffffff", "#ffffff", "#000000", "#000000", "#ffffff", "#ffffff", "#000000"] //should be white or black to negate the background
+let negativeColors = ["#000000", "#F0F0F0", "#F0F0F0", "#F0F0F0", "#000000", "#000000", "#F0F0F0", "#F0F0F0", "#000000"] //should be white or black to negate the background
 
 class Game {
   gameId = ""
@@ -29,10 +29,10 @@ class Game {
   turnState = "1" //if at choice or speed question state of the round
 
   capitalTimer = 10
-  conquestTimer = 15
-  battleTimer = 15
-  choiceQTimer = 15
-  speedQTimer = 10
+  conquestTimer = 25
+  battleTimer = 25
+  choiceQTimer = 25
+  speedQTimer = 25
   questionSets = []
   usedChoiceQ = []
   usedSpeedQ = []
@@ -119,7 +119,7 @@ class Game {
   async updateVisualization () { //still needs to show region numbers
     this.calculateScores()
     let visualBuffer = structuredClone(this.mapBuffer)
-    visualBuffer.svg.path.forEach((path) => {
+    visualBuffer.svg.path.forEach((path) => { //colors regions based off owner
       if (this.regionOwners.get(path._attributes.id) !== 0) {
         path._attributes.style = `fill: ${colors[this.playerColorIds.get(this.regionOwners.get(path._attributes.id))]}; stroke: rgb(0, 0, 0);`
       } else {
@@ -127,14 +127,18 @@ class Game {
       }
     })
     let playerIterator = 1;
-    visualBuffer.svg.text.forEach((textfield) => {
-      if (textfield._attributes.region != null) {
+    visualBuffer.svg.text.forEach((textfield) => { //shows region points and updates the scoreboard
+      if (textfield._attributes.region != null) { //region points
         if (this.capitalLives.has(textfield._attributes.region)) {
           textfield._text = textfield._attributes.region + "-" + (parseInt(this.capitalScore) + parseInt(this.capitalLives.get(textfield._attributes.region) * this.capitalLiveScore))
         } else {
           textfield._text = textfield._attributes.region + "-" + this.regionScores.get(textfield._attributes.region)
         }
-      } else {
+        if (this.regionOwners.get(textfield._attributes.region) !== 0) { //region points text color based off owner
+          let textColor = negativeColors[this.playerColorIds.get(this.regionOwners.get(textfield._attributes.region))]
+          textfield._attributes.style = `fill: ${textColor}; stroke: ${textColor}; font-family: Arial, sans-serif; font-size: 28px; white-space: pre;`
+        }
+      } else { //scoreboard
         if (this.playersById.get(playerIterator)) {
           textfield._text = this.playersById.get(playerIterator).globalName.substring(0, 11) + " - " + this.playerScores.get(this.playersById.get(playerIterator)) // player username (up to 11 letters) and "- score"
         }
@@ -865,10 +869,9 @@ class Game {
     this.playersById.forEach((player) => {
       currentScore.set(player, 0)
     })
-    console.log(this.regionOwners)
     this.regionOwners.forEach((owner, region) => { 
       if (owner !== 0 && owner !== undefined) {
-        let scoreOfOwner = currentScore.get(owner) //owner is undefined...?
+        let scoreOfOwner = currentScore.get(owner)
         if (this.capitalLives.has(region)) {
           scoreOfOwner += this.capitalScore
           scoreOfOwner += this.capitalLives.get(region) * this.capitalLiveScore
@@ -879,7 +882,7 @@ class Game {
       }
     })
     this.bonusDefenseScores.forEach((value, player) => {
-      let scoreOfOwner = currentScore.get(owner)
+      let scoreOfOwner = currentScore.get(player)
       scoreOfOwner += value
       currentScore.set(player, scoreOfOwner)
     })
