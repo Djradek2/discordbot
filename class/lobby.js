@@ -5,7 +5,7 @@ class Lobby {
   players = new Map() //interaction.user -> interaction
   lobbyCode = "" //16 numbers, do you think collisions will happen?
   mapName = ""
-  desiredSets = [1]
+  desiredSets = [1, 2, 3]
   server = null
   
   constructor (host, lobbyCode, server) {

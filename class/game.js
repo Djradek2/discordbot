@@ -29,10 +29,10 @@ class Game {
   turnState = "1" //if at choice or speed question state of the round
 
   capitalTimer = 10
-  conquestTimer = 25
-  battleTimer = 25
-  choiceQTimer = 25
-  speedQTimer = 25
+  conquestTimer = 15
+  battleTimer = 15
+  choiceQTimer = 20
+  speedQTimer = 20
   questionSets = []
   usedChoiceQ = []
   usedSpeedQ = []
