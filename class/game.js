@@ -859,7 +859,7 @@ class Game {
     if (!this.bonusDefenseScores.has(player)) {
       this.bonusDefenseScores.set(player, 0)
     }
-    let currentValue = this.bonusDefenseScores
+    let currentValue = this.bonusDefenseScores.get(player)
     currentValue += this.defenseValue
     this.bonusDefenseScores.set(player, currentValue)
   }
