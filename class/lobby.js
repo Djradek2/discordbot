@@ -12,6 +12,7 @@ class Lobby {
     this.players.set(host.user, host)
     this.lobbyCode = lobbyCode
     this.server = server
+    this.server.playerTracker.set(host.user, this)
     server.addLobby(this)
   }
 
@@ -28,12 +29,13 @@ class Lobby {
   }
 
   startGame () {
-    let gameInstance = new game.Game("cz", this.players, this.lobbyCode, this.server, this.desiredSets) // "cz" = map
-    this.server.currentGames.set(Helper.generateId16(), gameInstance)
-    this.players.forEach((interaction, player) => {
-      //this.server.clearPlayerFromOldGame(interaction)
-      this.server.playerTracker.set(player, gameInstance)
-    });
+    if (this.players.size > 0){
+      let gameInstance = new game.Game("cz", this.players, this.lobbyCode, this.server, this.desiredSets) // "cz" = map
+      this.server.currentGames.set(Helper.generateId16(), gameInstance)
+      this.players.forEach((interaction, player) => {
+        this.server.playerTracker.set(player, gameInstance)
+      });
+    }
     this.closeLobby()
   }
 

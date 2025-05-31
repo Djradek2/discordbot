@@ -36,7 +36,7 @@ class Game {
   questionSets = []
   usedChoiceQ = []
   usedSpeedQ = []
-  maxBattleRound = 2 //each player this many times
+  maxBattleRound = 4 //each player this many times
   capitalScore = 500
   capitalExtraLives = 2
   capitalLiveScore = 150
@@ -57,6 +57,7 @@ class Game {
 
   currentBattlePlayer = 1
   currentBattleRound = 1
+  lastInteraction = 0
 
   bonusDefenseScores = new Map() //inter.user -> score
   playerScores = new Map() //inter.user -> score
@@ -158,14 +159,24 @@ class Game {
 
   sendMapToPlayers () {
     this.players.forEach(interaction => {
-      if (this.playerDisabled.get(interaction) !== true) {
-        interaction.followUp({
-          content: "Current map:",
-          files: [{ attachment: this.pngMap }],
-          ephemeral: true,
-        })
+      if (this.playerDisabled.get(interaction.user) !== true) {
+        try {
+          interaction.followUp({
+            content: "Current map:",
+            files: [{ attachment: this.pngMap }],
+            ephemeral: true,
+          })
+        } catch (error) {
+          handleFollowUpError(interaction, error)
+        }
       }
     });
+  }
+
+  handleFollowUpError (interaction, error) {
+    if (error.code === 50027) {
+      this.disablePlayer(interaction)
+    }
   }
 
   setOwner (regionId, playerId) {
@@ -190,31 +201,36 @@ class Game {
     this.setupRegionScores()
     this.getNewChoiceQuestion()
     this.getNewSpeedQuestion()
+    this.lastInteraction = Date.now() / 1000
     const selectionRow = new ActionRowBuilder()
     const selectTest = new StringSelectMenuBuilder().setCustomId('startLocation').setPlaceholder('Select capital location!').addOptions(this.getAllRegionsToSelect());
     selectionRow.addComponents(selectTest)
     await this.updateVisualization()
     this.players.forEach(async (interaction, user) => {
-      if (this.playerDisabled.get(interaction) !== true) {
-        let memberResponse = await interaction.followUp({ //add capitalTimer
-          content: "Capital selection, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.capitalTimer) + ":R>",
-          components: [selectionRow],
-          files: [{ attachment: this.pngMap }],
-          ephemeral: true
-        })
-        const lobbyCollector = memberResponse.createMessageComponentCollector({
-          time: this.capitalTimer * 1000,
-        });
+      if (this.playerDisabled.get(user) !== true) {
         try {
-          lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-            interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-            this.players.set(interaction2.user, interaction2)
-            this.currentIntent.set(user, interaction2.values[0])
+          let memberResponse = await interaction.followUp({ //add capitalTimer
+            content: "Capital selection, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.capitalTimer) + ":R>",
+            components: [selectionRow],
+            files: [{ attachment: this.pngMap }],
+            ephemeral: true
           })
-        } catch (e) {
-          console.log("Capital target collector failed!")
+          const lobbyCollector = memberResponse.createMessageComponentCollector({
+            time: this.capitalTimer * 1000,
+          });
+          try {
+            lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+              interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+              this.lastInteraction = Date.now() / 1000
+              this.players.set(interaction2.user, interaction2)
+              this.currentIntent.set(user, interaction2.values[0])
+            })
+          } catch (e) {
+            console.log("Capital target collector failed!")
+          }
+        } catch (error) {
+          handleFollowUpError(interaction, error)
         }
-
       }
     })
     setTimeout(() => {
@@ -228,26 +244,30 @@ class Game {
     let rowsToSend = this.addConquerableRegionsToMenu()
     await this.updateVisualization()
     this.players.forEach(async (interaction, user) => {
-      if (this.playerDisabled.get(interaction) !== true) {
-        let memberResponse = await interaction.followUp({ //add capitalTimer
-          content: "Select region to conquer, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.conquestTimer) + ":R>",
-          components: [rowsToSend.get(user)],
-          files: [{ attachment: this.pngMap }],
-          ephemeral: true
-        })
-        const lobbyCollector = memberResponse.createMessageComponentCollector({
-          time: this.conquestTimer * 1000,
-        });
+      if (this.playerDisabled.get(user) !== true) {
         try {
-          lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-            interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-            this.players.set(interaction2.user, interaction2)
-            this.currentIntent.set(user, interaction2.values[0])
+          let memberResponse = await interaction.followUp({ //add capitalTimer
+            content: "Select region to conquer, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.conquestTimer) + ":R>",
+            components: [rowsToSend.get(user)],
+            files: [{ attachment: this.pngMap }],
+            ephemeral: true
           })
-        } catch (e) {
-          console.log("Conquer target collector failed!")
+          const lobbyCollector = memberResponse.createMessageComponentCollector({
+            time: this.conquestTimer * 1000,
+          });
+          try {
+            lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+              interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+              this.lastInteraction = Date.now() / 1000
+              this.players.set(interaction2.user, interaction2)
+              this.currentIntent.set(user, interaction2.values[0])
+            })
+          } catch (e) {
+            console.log("Conquer target collector failed!")
+          }
+        } catch (error) {
+          handleFollowUpError(interaction, error)
         }
-
       }
     })
     setTimeout(() => {
@@ -304,23 +324,30 @@ class Game {
     let interaction = this.players.get(user)
     let rowsToSend = this.addAttackableRegionsToMenu()
     await this.updateVisualization()
-    let memberResponse = await interaction.followUp({ //add capitalTimer
-      content: "Select region to attack, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.battleTimer) + ":R>",
-      components: [rowsToSend.get(user)],
-      files: [{ attachment: this.pngMap }],
-      ephemeral: true
-    })
-    const lobbyCollector = memberResponse.createMessageComponentCollector({
-      time: this.battleTimer * 1000,
-    });
-    try {
-      lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-        interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-        this.players.set(interaction2.user, interaction2)
-        this.currentIntent.set(user, interaction2.values[0])
-      })
-    } catch (e) {
-      console.log("Battle target collector failed!")
+    if (this.playerDisabled.get(user) !== true) {
+      try {
+        let memberResponse = await interaction.followUp({ //add capitalTimer
+          content: "Select region to attack, seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.battleTimer) + ":R>",
+          components: [rowsToSend.get(user)],
+          files: [{ attachment: this.pngMap }],
+          ephemeral: true
+        })
+        const lobbyCollector = memberResponse.createMessageComponentCollector({
+          time: this.battleTimer * 1000,
+        });
+        try {
+          lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+            interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+            this.lastInteraction = Date.now() / 1000
+            this.players.set(interaction2.user, interaction2)
+            this.currentIntent.set(user, interaction2.values[0])
+          })
+        } catch (e) {
+          console.log("Battle target collector failed!")
+        }
+      } catch (error) {
+        handleFollowUpError(interaction, error)
+      }
     }
 
     setTimeout(() => {
@@ -381,7 +408,7 @@ class Game {
   async capitalHandler () {
     this.players.forEach((interaction, player) => {  //randomize players who dont have intent
       if (this.currentIntent.get(player) === null) {
-        this.currentIntent.set(player, Math.floor(Math.random() * this.regionOwners.size).toString())
+        this.currentIntent.set(player, Math.ceil(Math.random() * this.regionOwners.size).toString())
       }
     })
 
@@ -556,28 +583,36 @@ class Game {
     this.getNewChoiceQuestion()
     this.getNewSpeedQuestion()
     if (this.gameState === "battle") {
-      this.switchBattlePlayer()
-      if (this.currentBattleRound > this.maxBattleRound) {
-        this.finalizeGame()
-        return
-      }
-      await this.updateVisualization()
-      this.sendMapToPlayers()
-      this.cleanTemporaryVariables()
-      this.startBattleTurn()
-    }
-    if (this.gameState === "conquer") {
-      await this.updateVisualization()
-      if (this.getUnownedRegions().size > 0) {
-        // this.gameState = "battle" //temporary testing thingy
-        // this.cleanTemporaryVariables()
-        // this.startBattleTurn() //temporary testing thingy
-        this.cleanTemporaryVariables()
-        this.startConquerTurn()
-      } else {
-        this.gameState = "battle"
+      if (this.shouldGameContinue()) {
+        this.switchBattlePlayer()
+        if (this.currentBattleRound > this.maxBattleRound) {
+          this.finalizeGame()
+          return
+        }
+        await this.updateVisualization()
+        this.sendMapToPlayers()
         this.cleanTemporaryVariables()
         this.startBattleTurn()
+      } else {
+        this.endGame()
+      }
+    }
+    if (this.gameState === "conquer") {
+      if (this.shouldGameContinue()) {
+        await this.updateVisualization()
+        if (this.getUnownedRegions().size > 0) {
+          // this.gameState = "battle" //temporary testing thingy
+          // this.cleanTemporaryVariables() //temporary testing thingy
+          // this.startBattleTurn() //temporary testing thingy
+          this.cleanTemporaryVariables()
+          this.startConquerTurn()
+        } else {
+          this.gameState = "battle"
+          this.cleanTemporaryVariables()
+          this.startBattleTurn()
+        }
+      } else {
+        this.endGame()
       }
     }
     if (this.gameState === "setup") {
@@ -742,29 +777,33 @@ class Game {
 
     players.forEach(async (contestant) => {
       let interaction = this.players.get(contestant)
-
-      let memberResponse = await interaction.followUp({
-        content: questionText + " seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.choiceQTimer) + ":R>",
-        components: [answerRow],
-        ephemeral: true
-      });
-
-      const collector = memberResponse.createMessageComponentCollector({
-        time: this.choiceQTimer * 1000,
-      });
-
-      try {
-        collector.on('collect', async (interaction2) => {
-          interaction2.deferUpdate()
-          if (!this.evalChoiceQuestions.has(region)) {
-            this.evalChoiceQuestions.set(region, new Map())
+      if (this.playerDisabled.get(interaction.user) !== true) {
+        try {
+          let memberResponse = await interaction.followUp({
+            content: questionText + " seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.choiceQTimer) + ":R>",
+            components: [answerRow],
+            ephemeral: true
+          });
+          const collector = memberResponse.createMessageComponentCollector({
+            time: this.choiceQTimer * 1000,
+          });
+          try {
+            collector.on('collect', async (interaction2) => {
+              interaction2.deferUpdate()
+              this.lastInteraction = Date.now() / 1000
+              if (!this.evalChoiceQuestions.has(region)) {
+                this.evalChoiceQuestions.set(region, new Map())
+              }
+              let answerMap = this.evalChoiceQuestions.get(region)
+              answerMap.set(interaction2.user, interaction2.customId)
+              this.evalChoiceQuestions.set(region, answerMap)
+            });
+          } catch (e) {
+            console.log("Choice question collector failed!")
           }
-          let answerMap = this.evalChoiceQuestions.get(region)
-          answerMap.set(interaction2.user, interaction2.customId)
-          this.evalChoiceQuestions.set(region, answerMap)
-        });
-      } catch (e) {
-        console.log("Choice question collector failed!")
+        } catch (error) {
+          handleFollowUpError(interaction, error)
+        }
       }
     })
   }
@@ -790,42 +829,46 @@ class Game {
 
     players.forEach(async (contestant) => {
       let interaction = this.players.get(contestant)
-      const startAnswerRow = new ActionRowBuilder()
-      startAnswerRow.addComponents(new ButtonBuilder().setCustomId("questionAnswer").setLabel("Answer question").setStyle(ButtonStyle.Primary));
-      let memberResponse = await interaction.followUp({
-        content: questionText + " seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.speedQTimer) + ":R>",
-        components: [startAnswerRow],
-        ephemeral: true
-      })
-      let lobbyCollector = memberResponse.createMessageComponentCollector({
-        time: this.speedQTimer * 1000,
-      });
-
-      try {
-        lobbyCollector.on('collect', async (interaction2) => { //this never stops collecting with editReply...
-          await interaction2.showModal(questionModal)
-          let modalCollector = await interaction2.awaitModalSubmit({
+      if (this.playerDisabled.get(interaction.user) !== true) {
+        const startAnswerRow = new ActionRowBuilder()
+        startAnswerRow.addComponents(new ButtonBuilder().setCustomId("questionAnswer").setLabel("Answer question").setStyle(ButtonStyle.Primary));
+        try {
+          let memberResponse = await interaction.followUp({
+            content: questionText + " seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.speedQTimer) + ":R>",
+            components: [startAnswerRow],
+            ephemeral: true
+          })
+          let lobbyCollector = memberResponse.createMessageComponentCollector({
             time: this.speedQTimer * 1000,
-            filter: i => i.user.id === interaction2.user.id,
-          }).catch(console.error)
-          if (modalCollector) {
-            if (modalCollector.fields.fields.get('questionAnswer').value) {
-              modalCollector.deferReply({ ephemeral: true })
-              // if (!this.evalSpeedQuestions.has(region)) {
-              //   this.evalSpeedQuestions.set(region, new Map())
-              // }
-              let answerMap = this.evalSpeedQuestions.get(region)
-              let answerToSet = modalCollector.fields.fields.get('questionAnswer').value.replace(/\D/g, '')
-              if (answerToSet.length === 0) {
-                answerToSet = 0
+          });
+  
+          try {
+            lobbyCollector.on('collect', async (interaction2) => { //this never stops collecting with editReply...
+              await interaction2.showModal(questionModal)
+              this.lastInteraction = Date.now() / 1000
+              let modalCollector = await interaction2.awaitModalSubmit({
+                time: this.speedQTimer * 1000,
+                filter: i => i.user.id === interaction2.user.id,
+              }).catch(console.error)
+              if (modalCollector) {
+                if (modalCollector.fields.fields.get('questionAnswer').value) {
+                  modalCollector.deferReply({ ephemeral: true })
+                  let answerMap = this.evalSpeedQuestions.get(region)
+                  let answerToSet = modalCollector.fields.fields.get('questionAnswer').value.replace(/\D/g, '')
+                  if (answerToSet.length === 0) {
+                    answerToSet = 0
+                  }
+                  answerMap.set(interaction2.user, [answerToSet, modalCollector.createdTimestamp])
+                  this.evalSpeedQuestions.set(region, answerMap)
+                }
               }
-              answerMap.set(interaction2.user, [answerToSet, modalCollector.createdTimestamp])
-              this.evalSpeedQuestions.set(region, answerMap)
-            }
+            })
+          } catch (e) {
+            console.log("Speed question collector failed!")
           }
-        })
-      } catch (e) {
-        console.log("Speed question collector failed!")
+        } catch (error) {
+          handleFollowUpError(interaction, error)
+        }
       }
     })
   }
@@ -898,10 +941,14 @@ class Game {
     if (messageToSend !== "") {
       this.players.forEach((interaction, player) => {
         if (this.playerDisabled.get(player) !== true) {
-          interaction.followUp({
-            content: messageToSend,
-            ephemeral: true
-          })
+          try {
+            interaction.followUp({
+              content: messageToSend,
+              ephemeral: true
+            })
+          } catch (error) {
+            handleFollowUpError(interaction, error)
+          }
         }
       })
     }
@@ -932,21 +979,42 @@ class Game {
     await this.updateVisualization()
     this.players.forEach((interaction, player) => {
       if (this.playerDisabled.get(player) !== true) {
-        interaction.followUp({
-          content: placementMessage,
-          files: [{ attachment: this.pngMap }],
-          ephemeral: true
-        })
+        try {
+          interaction.followUp({
+            content: placementMessage,
+            files: [{ attachment: this.pngMap }],
+            ephemeral: true
+          })
+        } catch (error) {
+          handleFollowUpError(interaction, error)
+        }
       }
     })
   }
 
-  async finalizeGame () { // TODO
+  shouldGameContinue () { //call in battle & conquer rounds
+    let anyPlayerRemaining = false
+    this.playerDisabled.forEach((disabled) => {
+      if (disabled === false) {
+        anyPlayerRemaining = true
+      }
+    })
+    if (this.lastInteraction < ((Date.now() / 1000) - 180)) { //if noone interacted for 3 mins
+      return false
+    }
+    return anyPlayerRemaining
+  }
+
+  endGame () {
+    this.server.currentGames.delete(this.gameId)
+  }
+
+  async finalizeGame () {
     this.calculateScores()
     //TODO: tiebreaker question
     await this.sendFinalPlacements()
     //TODO: record results to db
-    this.server.currentGames.delete(this.gameId)
+    this.endGame()
   }
 }
 

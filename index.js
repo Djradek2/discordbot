@@ -51,16 +51,16 @@ async function setupServer () {
   }
   const res = await db.query(query)
 
-  const testRow = new ActionRowBuilder()
-  const correctButton = new ButtonBuilder().setCustomId("test1").setLabel(res['rows'][0]['correct']).setStyle(ButtonStyle.Primary);
-  const falseButton1 = new ButtonBuilder().setCustomId("test2").setLabel(res['rows'][0]['option1']).setStyle(ButtonStyle.Primary);
-  const falseButton2 = new ButtonBuilder().setCustomId("test3").setLabel(res['rows'][0]['option2']).setStyle(ButtonStyle.Primary);
-  const falseButton3 = new ButtonBuilder().setCustomId("test4").setLabel(res['rows'][0]['option3']).setStyle(ButtonStyle.Primary);
+  // const testRow = new ActionRowBuilder()
+  // const correctButton = new ButtonBuilder().setCustomId("test1").setLabel(res['rows'][0]['correct']).setStyle(ButtonStyle.Primary);
+  // const falseButton1 = new ButtonBuilder().setCustomId("test2").setLabel(res['rows'][0]['option1']).setStyle(ButtonStyle.Primary);
+  // const falseButton2 = new ButtonBuilder().setCustomId("test3").setLabel(res['rows'][0]['option2']).setStyle(ButtonStyle.Primary);
+  // const falseButton3 = new ButtonBuilder().setCustomId("test4").setLabel(res['rows'][0]['option3']).setStyle(ButtonStyle.Primary);
 
-  testRow.addComponents(correctButton)
-  testRow.addComponents(falseButton1)
-  testRow.addComponents(falseButton2)
-  testRow.addComponents(falseButton3)
+  // testRow.addComponents(correctButton)
+  // testRow.addComponents(falseButton1)
+  // testRow.addComponents(falseButton2)
+  // testRow.addComponents(falseButton3)
 
   const client = new Client({
     intents: [
