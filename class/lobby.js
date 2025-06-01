@@ -6,6 +6,7 @@ class Lobby {
   lobbyCode = "" //16 numbers, do you think collisions will happen?
   mapName = ""
   desiredSets = [1, 2, 3]
+  unstarted = true
   server = null
   
   constructor (host, lobbyCode, server) {
@@ -29,7 +30,8 @@ class Lobby {
   }
 
   startGame () {
-    if (this.players.size > 0){
+    if (this.players.size > 0 && this.unstarted){
+      this.unstarted = false
       let gameInstance = new game.Game("cz", this.players, this.lobbyCode, this.server, this.desiredSets) // "cz" = map
       this.server.currentGames.set(Helper.generateId16(), gameInstance)
       this.players.forEach((interaction, player) => {
