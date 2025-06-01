@@ -28,7 +28,7 @@ class Game {
   gameState = "setup" //setup, conquer, battle, finish
   turnState = "1" //if at choice or speed question state of the round
 
-  capitalTimer = 10
+  capitalTimer = 15
   conquestTimer = 15
   battleTimer = 15
   choiceQTimer = 20
@@ -165,9 +165,9 @@ class Game {
             content: "Current map:",
             files: [{ attachment: this.pngMap }],
             ephemeral: true,
-          })
+          }).catch(console.error)
         } catch (error) {
-          handleFollowUpError(interaction, error)
+          this.handleFollowUpError(interaction, error)
         }
       }
     });
@@ -214,22 +214,24 @@ class Game {
             components: [selectionRow],
             files: [{ attachment: this.pngMap }],
             ephemeral: true
-          })
-          const lobbyCollector = memberResponse.createMessageComponentCollector({
-            time: this.capitalTimer * 1000,
-          });
-          try {
-            lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-              interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-              this.lastInteraction = Date.now() / 1000
-              this.players.set(interaction2.user, interaction2)
-              this.currentIntent.set(user, interaction2.values[0])
-            })
-          } catch (e) {
-            console.log("Capital target collector failed!")
+          }).catch(console.error)
+          if (memberResponse != undefined) {
+            const lobbyCollector = memberResponse.createMessageComponentCollector({
+              time: this.capitalTimer * 1000,
+            });
+            try {
+              lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+                interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+                this.lastInteraction = Date.now() / 1000
+                this.players.set(interaction2.user, interaction2)
+                this.currentIntent.set(user, interaction2.values[0])
+              })
+            } catch (e) {
+              console.log("Capital target collector failed!")
+            }
           }
         } catch (error) {
-          handleFollowUpError(interaction, error)
+          this.handleFollowUpError(interaction, error)
         }
       }
     })
@@ -251,22 +253,24 @@ class Game {
             components: [rowsToSend.get(user)],
             files: [{ attachment: this.pngMap }],
             ephemeral: true
-          })
-          const lobbyCollector = memberResponse.createMessageComponentCollector({
-            time: this.conquestTimer * 1000,
-          });
-          try {
-            lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-              interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-              this.lastInteraction = Date.now() / 1000
-              this.players.set(interaction2.user, interaction2)
-              this.currentIntent.set(user, interaction2.values[0])
-            })
-          } catch (e) {
-            console.log("Conquer target collector failed!")
+          }).catch(console.error)
+          if (memberResponse != undefined) {
+            const lobbyCollector = memberResponse.createMessageComponentCollector({
+              time: this.conquestTimer * 1000,
+            });
+            try {
+              lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+                interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+                this.lastInteraction = Date.now() / 1000
+                this.players.set(interaction2.user, interaction2)
+                this.currentIntent.set(user, interaction2.values[0])
+              })
+            } catch (e) {
+              console.log("Conquer target collector failed!")
+            } 
           }
         } catch (error) {
-          handleFollowUpError(interaction, error)
+          this.handleFollowUpError(interaction, error)
         }
       }
     })
@@ -331,22 +335,24 @@ class Game {
           components: [rowsToSend.get(user)],
           files: [{ attachment: this.pngMap }],
           ephemeral: true
-        })
-        const lobbyCollector = memberResponse.createMessageComponentCollector({
-          time: this.battleTimer * 1000,
-        });
-        try {
-          lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
-            interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
-            this.lastInteraction = Date.now() / 1000
-            this.players.set(interaction2.user, interaction2)
-            this.currentIntent.set(user, interaction2.values[0])
-          })
-        } catch (e) {
-          console.log("Battle target collector failed!")
+        }).catch(console.error)
+        if (memberResponse != undefined) {
+          const lobbyCollector = memberResponse.createMessageComponentCollector({
+            time: this.battleTimer * 1000,
+          });
+          try {
+            lobbyCollector.on('collect', async (interaction2) => { //doesnt want deferUpdate for some reason
+              interaction2.deferUpdate() //deferUpdate seems to not be used for editReply
+              this.lastInteraction = Date.now() / 1000
+              this.players.set(interaction2.user, interaction2)
+              this.currentIntent.set(user, interaction2.values[0])
+            })
+          } catch (e) {
+            console.log("Battle target collector failed!")
+          }
         }
       } catch (error) {
-        handleFollowUpError(interaction, error)
+        this.handleFollowUpError(interaction, error)
       }
     }
 
@@ -783,26 +789,28 @@ class Game {
             content: questionText + " seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.choiceQTimer) + ":R>",
             components: [answerRow],
             ephemeral: true
-          });
-          const collector = memberResponse.createMessageComponentCollector({
-            time: this.choiceQTimer * 1000,
-          });
-          try {
-            collector.on('collect', async (interaction2) => {
-              interaction2.deferUpdate()
-              this.lastInteraction = Date.now() / 1000
-              if (!this.evalChoiceQuestions.has(region)) {
-                this.evalChoiceQuestions.set(region, new Map())
-              }
-              let answerMap = this.evalChoiceQuestions.get(region)
-              answerMap.set(interaction2.user, interaction2.customId)
-              this.evalChoiceQuestions.set(region, answerMap)
+          }).catch(console.error)
+          if (memberResponse != undefined) {
+            const collector = memberResponse.createMessageComponentCollector({
+              time: this.choiceQTimer * 1000,
             });
-          } catch (e) {
-            console.log("Choice question collector failed!")
+            try {
+              collector.on('collect', async (interaction2) => {
+                interaction2.deferUpdate()
+                this.lastInteraction = Date.now() / 1000
+                if (!this.evalChoiceQuestions.has(region)) {
+                  this.evalChoiceQuestions.set(region, new Map())
+                }
+                let answerMap = this.evalChoiceQuestions.get(region)
+                answerMap.set(interaction2.user, interaction2.customId)
+                this.evalChoiceQuestions.set(region, answerMap)
+              });
+            } catch (e) {
+              console.log("Choice question collector failed!")
+            }
           }
         } catch (error) {
-          handleFollowUpError(interaction, error)
+          this.handleFollowUpError(interaction, error)
         }
       }
     })
@@ -837,37 +845,38 @@ class Game {
             content: questionText + " seconds remaining: " + "<t:" + (Math.floor(Date.now() / 1000, 1000) + this.speedQTimer) + ":R>",
             components: [startAnswerRow],
             ephemeral: true
-          })
-          let lobbyCollector = memberResponse.createMessageComponentCollector({
-            time: this.speedQTimer * 1000,
-          });
-  
-          try {
-            lobbyCollector.on('collect', async (interaction2) => { //this never stops collecting with editReply...
-              await interaction2.showModal(questionModal)
-              this.lastInteraction = Date.now() / 1000
-              let modalCollector = await interaction2.awaitModalSubmit({
-                time: this.speedQTimer * 1000,
-                filter: i => i.user.id === interaction2.user.id,
-              }).catch(console.error)
-              if (modalCollector) {
-                if (modalCollector.fields.fields.get('questionAnswer').value) {
-                  modalCollector.deferReply({ ephemeral: true })
-                  let answerMap = this.evalSpeedQuestions.get(region)
-                  let answerToSet = modalCollector.fields.fields.get('questionAnswer').value.replace(/\D/g, '')
-                  if (answerToSet.length === 0) {
-                    answerToSet = 0
+          }).catch(console.error)
+          if (memberResponse != undefined) {
+            let lobbyCollector = memberResponse.createMessageComponentCollector({
+              time: this.speedQTimer * 1000,
+            });
+            try {
+              lobbyCollector.on('collect', async (interaction2) => { //this never stops collecting with editReply...
+                await interaction2.showModal(questionModal)
+                this.lastInteraction = Date.now() / 1000
+                let modalCollector = await interaction2.awaitModalSubmit({
+                  time: this.speedQTimer * 1000,
+                  filter: i => i.user.id === interaction2.user.id,
+                }).catch(console.error)
+                if (modalCollector) {
+                  if (modalCollector.fields.fields.get('questionAnswer').value) {
+                    modalCollector.deferReply({ ephemeral: true })
+                    let answerMap = this.evalSpeedQuestions.get(region)
+                    let answerToSet = modalCollector.fields.fields.get('questionAnswer').value.replace(/\D/g, '')
+                    if (answerToSet.length === 0) {
+                      answerToSet = 0
+                    }
+                    answerMap.set(interaction2.user, [answerToSet, modalCollector.createdTimestamp])
+                    this.evalSpeedQuestions.set(region, answerMap)
                   }
-                  answerMap.set(interaction2.user, [answerToSet, modalCollector.createdTimestamp])
-                  this.evalSpeedQuestions.set(region, answerMap)
                 }
-              }
-            })
-          } catch (e) {
-            console.log("Speed question collector failed!")
+              })
+            } catch (e) {
+              console.log("Speed question collector failed!")
+            }
           }
         } catch (error) {
-          handleFollowUpError(interaction, error)
+          this.handleFollowUpError(interaction, error)
         }
       }
     })
@@ -945,9 +954,9 @@ class Game {
             interaction.followUp({
               content: messageToSend,
               ephemeral: true
-            })
+            }).catch(console.error)
           } catch (error) {
-            handleFollowUpError(interaction, error)
+            this.handleFollowUpError(interaction, error)
           }
         }
       })
@@ -984,9 +993,9 @@ class Game {
             content: placementMessage,
             files: [{ attachment: this.pngMap }],
             ephemeral: true
-          })
+          }).catch(console.error)
         } catch (error) {
-          handleFollowUpError(interaction, error)
+          this.handleFollowUpError(interaction, error)
         }
       }
     })
