@@ -16,6 +16,10 @@ const nodePath = require('node:path');
 const server = require('./class/server.js')
 dotenv.config()
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 const { Client: DBClient } = pg
 const db = new DBClient({
   user: 'josh',

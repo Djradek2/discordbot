@@ -14,6 +14,7 @@ module.exports = {
     mainMenuRow.addComponents(new ButtonBuilder().setCustomId("hostlobby").setLabel("Host Lobby").setStyle(ButtonStyle.Primary));
     mainMenuRow.addComponents(new ButtonBuilder().setCustomId("joinlobby").setLabel("Join Lobby").setStyle(ButtonStyle.Primary));
     //mainMenuRow.addComponents(new ButtonBuilder().setCustomId("langselect").setLabel("Change Language").setStyle(ButtonStyle.Primary));
+    mainMenuRow.addComponents(new ButtonBuilder().setCustomId("suggest").setLabel("Suggest a Question").setStyle(ButtonStyle.Primary));
 		let memberResponse = await interaction.reply({
       content: "Main Menu",
       components: [mainMenuRow],
@@ -87,8 +88,32 @@ module.exports = {
           //   interaction3.deferUpdate()
           //   console.log("lobby join attempt")
           // })
+        } else if (interaction2.customId === "suggest") {
+          const questionModal = new ModalBuilder().setCustomId('suggestion').setTitle("Suggest a Question")
+          const questionRow1 = new ActionRowBuilder()
+          questionRow1.addComponents(new TextInputBuilder().setCustomId("question").setLabel("Question").setStyle(TextInputStyle.Short));
+          const questionRow2 = new ActionRowBuilder()
+          questionRow2.addComponents(new TextInputBuilder().setCustomId("answer").setLabel("Answer").setStyle(TextInputStyle.Short));
+          questionModal.addComponents(questionRow1)
+          questionModal.addComponents(questionRow2)
+
+          await interaction2.showModal(questionModal)
+          let modalCollector = await interaction2.awaitModalSubmit({
+            time: 600000,
+            filter: i => i.user.id === interaction2.user.id,
+          }).catch(console.error)
+          if (modalCollector) {
+            await modalCollector.deferReply({ ephemeral: true })
+            if (modalCollector.fields.fields.get('question').value && modalCollector.fields.fields.get('answer').value) {
+              console.log(modalCollector.fields.fields.get('question').value)
+              console.log(modalCollector.fields.fields.get('answer').value)
+              modalCollector.editReply({ content: "Thank you for submitting a question!" })
+            } else {
+              modalCollector.editReply({ content: "Question could not be parsed!" })
+            }
+          }
         } else if (interaction2.customId === "langselect") {
-          
+
         }
       });
     } catch (e) {
