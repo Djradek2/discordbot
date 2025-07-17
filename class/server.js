@@ -45,8 +45,8 @@ class Server {
     }
     return false
   }
-
-  connectToDB () {
+ 
+  connectToDB () { //TODO: this will timeout and crash eventually
     this.client = new Client({
       host: process.env.DB_HOST,
       port: process.env.DB_PORT,

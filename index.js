@@ -66,7 +66,7 @@ async function setupServer () {
   // testRow.addComponents(falseButton2)
   // testRow.addComponents(falseButton3)
 
-  const client = new Client({
+  const client = new Client({ //TODO: this will timeout and crash eventually
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMessages,
